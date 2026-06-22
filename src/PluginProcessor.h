@@ -76,6 +76,12 @@ public:
     // a failed load leaves the existing sample in place. Returns success.
     bool loadUserSample (int voiceIndex, const juce::File& file);
 
+    // Restore one voice to its bundled factory sound (undo a user load).
+    bool restoreVoiceToFactory (int voiceIndex);
+
+    // True when the voice currently plays a user-loaded file (vs. the factory kit).
+    bool voiceHasUserSample (int voiceIndex) const;
+
     // The sample currently loaded in a voice ("factory", "file", ...), for the UI.
     juce::String getVoiceSourceLabel (int voiceIndex) const;
 

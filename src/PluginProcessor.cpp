@@ -146,6 +146,28 @@ bool LMOneAudioProcessor::loadUserSample (int voiceIndex, const juce::File& file
     return true;
 }
 
+bool LMOneAudioProcessor::restoreVoiceToFactory (int voiceIndex)
+{
+    if (currentKit == nullptr)
+        return false;
+
+    // Copy-on-write: clone, reset one voice to factory in the clone, publish.
+    DrumKit::Ptr next = new DrumKit (*currentKit);
+    if (! KitFactory::restoreVoiceToFactory (*next, voiceIndex))
+        return false;
+
+    setKit (next);
+    return true;
+}
+
+bool LMOneAudioProcessor::voiceHasUserSample (int voiceIndex) const
+{
+    if (currentKit == nullptr || voiceIndex < 0 || voiceIndex >= DrumKit::kNumVoices)
+        return false;
+
+    return currentKit->voice (voiceIndex).sourceTag == "file";
+}
+
 juce::String LMOneAudioProcessor::getVoiceSourceLabel (int voiceIndex) const
 {
     if (currentKit == nullptr || voiceIndex < 0 || voiceIndex >= DrumKit::kNumVoices)

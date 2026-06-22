@@ -86,4 +86,7 @@ namespace KitFactory
     // Decode a WAV/AIFF into one voice of an existing kit (mono downmix). Returns
     // false on failure and leaves the voice untouched.
     bool loadVoiceFromFile (DrumKit& kit, int voiceIndex, const juce::File& file);
+
+    // Reset one voice back to its bundled/factory sound (or procedural fallback).
+    bool restoreVoiceToFactory (DrumKit& kit, int voiceIndex, double proceduralRate = 44100.0);
 }

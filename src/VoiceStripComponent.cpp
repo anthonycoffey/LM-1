@@ -11,7 +11,18 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     padButton.onClick = [this] { processor.keyboardState.noteOn (1, midiNote, 0.9f); };
     addAndMakeVisible (padButton);
 
-    loadButton.onClick = [this] { chooseSample(); };
+    loadButton.onClick = [this]
+    {
+        if (processor.voiceHasUserSample (index))
+        {
+            processor.restoreVoiceToFactory (index);   // undo a user load -> factory sound
+            updateSourceLabel();
+        }
+        else
+        {
+            chooseSample();
+        }
+    };
     addAndMakeVisible (loadButton);
 
     sourceLabel.setJustificationType (juce::Justification::centred);
@@ -69,6 +80,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
 void VoiceStripComponent::updateSourceLabel()
 {
     sourceLabel.setText (processor.getVoiceSourceLabel (index), juce::dontSendNotification);
+    loadButton.setLoaded (processor.voiceHasUserSample (index));   // folder vs. remove icon
 }
 
 void VoiceStripComponent::chooseSample()
