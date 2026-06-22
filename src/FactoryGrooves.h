@@ -17,11 +17,11 @@ namespace FactoryGrooves
 {
     struct Groove { juce::String name; int tempo; Pattern pattern; };
 
-    inline Pattern makeGroove (std::initializer_list<std::pair<int, const char*>> lanes)
+    inline Pattern makeGroove (int numSteps, std::initializer_list<std::pair<int, const char*>> lanes)
     {
         Pattern p;
         p.clear();
-        p.numSteps = 16;
+        p.numSteps = juce::jlimit (1, Pattern::kMaxSteps, numSteps);
         p.numLanes = DrumKit::kNumVoices;
 
         for (const auto& ls : lanes)
@@ -31,7 +31,7 @@ namespace FactoryGrooves
             if (lane < 0 || lane >= Pattern::kMaxLanes)
                 continue;
 
-            for (int i = 0; i < 16 && s[i] != '\0'; ++i)
+            for (int i = 0; i < p.numSteps && s[i] != '\0'; ++i)
             {
                 const char c = s[i];
                 const juce::uint8 v = (c == 'X') ? (juce::uint8) 122
@@ -43,6 +43,12 @@ namespace FactoryGrooves
             }
         }
         return p;
+    }
+
+    // 16-step convenience overload (most factory grooves are one bar of 16ths).
+    inline Pattern makeGroove (std::initializer_list<std::pair<int, const char*>> lanes)
+    {
+        return makeGroove (16, lanes);
     }
 
     inline std::array<std::array<Groove, 8>, 5> build()
@@ -57,7 +63,11 @@ namespace FactoryGrooves
         b[0][1] = { "Driving Rock", 128, makeGroove ({ {BASS,"x.....x.x.....x."},{SNR,"....x.......x..."},{HAT,"x.x.x.x.x.x.x.x."} }) };
         b[0][2] = { "Half-Time",     92, makeGroove ({ {BASS,"x..............."},{SNR,"........x......."},{HAT,"x.x.x.x.x.x.x.x."} }) };
         b[0][3] = { "Pop 4-Floor",  118, makeGroove ({ {BASS,"x...x...x...x..."},{SNR,"....x.......x..."},{HAT,"..x...x...x...x."},{CLP,"....x.......x..."} }) };
-        b[0][4] = { "Tom Beat",     110, makeGroove ({ {BASS,"x.......x......."},{SNR,"....x.......x..."},{TML,".............x.."},{TMH,"..............x."} }) };
+        b[0][4] = { "Tom Beat",     110, makeGroove (32, { {BASS,"x.......x......." "x.......x......."},
+                                                           {SNR, "....x.......x..." "....x.......x..."},
+                                                           {HAT, "x.x.x.x.x.x.x.x." "x.x.x.x.x.x.x.x."},
+                                                           {TML, "................" "............x.x."},
+                                                           {TMH, "................" ".............x.x"} }) };
         b[0][5] = { "Stadium",      132, makeGroove ({ {BASS,"x...x...x...x..."},{CLP,"....x.......x..."},{HAT,"x.x.x.x.x.x.x.x."} }) };
         b[0][6] = { "Anthem",       100, makeGroove ({ {BASS,"x.......x...x..."},{SNR,"....x.......x..."},{HAT,"x.x.x.x.x.x.x.x."},{OHH,"..............x."} }) };
         b[0][7] = { "Ballad",        76, makeGroove ({ {BASS,"x.......x......."},{SNR,"....x.......x..."},{HAT,"x...x...x...x..."} }) };
@@ -80,7 +90,7 @@ namespace FactoryGrooves
         b[2][4] = { "Drill",        142, makeGroove ({ {BASS,"x....x....x..x.."},{SNR,"........x......."},{HAT,"x.xx.x.xx.x.xx.x"} }) };
         b[2][5] = { "Old School",   102, makeGroove ({ {BASS,"x...x..x.x...x.."},{SNR,"....x.......x..."},{CLP,"....x.......x..."},{HAT,"x.x.x.x.x.x.x.x."} }) };
         b[2][6] = { "Swung",         88, makeGroove ({ {BASS,"x.....x..x......"},{SNR,"....x.......x..."},{HAT,"x.x.x.x.x.x.x.x."} }) };
-        b[2][7] = { "Cloud",         76, makeGroove ({ {BASS,"x.......x......."},{SNR,"........x......."},{HAT,"x.x.x.x.x.x.x.x."} }) };
+        b[2][7] = { "Cloud",         76, makeGroove (8, { {BASS,"x......."},{SNR,"....x..."},{HAT,"x.x.x.x."} }) };
 
         // --- Bank 4: House & Techno ---------------------------------------------
         b[3][0] = { "Classic House",124, makeGroove ({ {BASS,"x...x...x...x..."},{CLP,"....x.......x..."},{OHH,"..x...x...x...x."},{HAT,"xxxxxxxxxxxxxxxx"} }) };
@@ -89,7 +99,7 @@ namespace FactoryGrooves
         b[3][3] = { "Tech House",   126, makeGroove ({ {BASS,"x...x...x...x..."},{OHH,"..x...x...x...x."},{CLP,"....x.......x..."},{CAB,"xxxxxxxxxxxxxxxx"} }) };
         b[3][4] = { "Acid",         128, makeGroove ({ {BASS,"x...x...x...x..."},{HAT,"x.x.x.x.x.x.x.x."},{CLP,"....x.......x..."} }) };
         b[3][5] = { "Garage",       132, makeGroove ({ {BASS,"x.....x.x.....x."},{SNR,"....x.......x..."},{HAT,"xxxxxxxxxxxxxxxx"} }) };
-        b[3][6] = { "Minimal",      125, makeGroove ({ {BASS,"x...x...x...x..."},{HAT,"..x...x...x...x."},{CLV,"x.......x......."} }) };
+        b[3][6] = { "Minimal",      125, makeGroove (8, { {BASS,"x...x..."},{HAT,"..x...x."},{CLV,"x......."} }) };
         b[3][7] = { "Trance",       138, makeGroove ({ {BASS,"x...x...x...x..."},{OHH,"..x...x...x...x."},{CLP,"....x.......x..."} }) };
 
         // --- Bank 5: Latin / Disco / World --------------------------------------

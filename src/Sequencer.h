@@ -114,7 +114,7 @@ public:
             // swung lanes delayed by their own amount on odd 16ths.
             for (int lane = 0; lane < numLanes; ++lane)
             {
-                const double swingPpq = odd ? juce::jlimit (0.0, 0.9, laneSwingAmt (lane)) * 0.5 * stepPpq
+                const double swingPpq = odd ? juce::jlimit (0.0, 1.0, laneSwingAmt (lane)) * 0.5 * stepPpq
                                             : 0.0;
                 const double laneTrig = gridPpq + swingPpq;
 

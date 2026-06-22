@@ -175,6 +175,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
             {
                 processor.loadSlot (i);
                 grid.reloadFromProcessor();
+                stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
             }
             refreshBankUI();
         };
@@ -284,6 +285,7 @@ void LMOneAudioProcessorEditor::gotoBank (int newBank)
     {
         processor.loadSlot (slot);
         grid.reloadFromProcessor();
+        stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
     }
 
     refreshBankUI();

@@ -45,6 +45,8 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     setupKnob (panSlider);
     setupKnob (tuneSlider);
     setupKnob (swingSlider);
+    // Shuffle is a notched, named setting — show its value (pan/tune stay clean).
+    swingSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 58, 12);
 
     auto setupCaption = [this] (juce::Label& l, const juce::String& t)
     {
