@@ -203,6 +203,7 @@ void LMOneAudioProcessor::clearPattern()
     workingPattern.clear();
     workingPattern.numSteps = keepSteps;
     workingPattern.numLanes = DrumKit::kNumVoices;
+    currentSlot = -1;                 // a cleared grid no longer matches any slot
     publishPattern (workingPattern);
 }
 
@@ -212,6 +213,11 @@ void LMOneAudioProcessor::setCurrentBank (int bank)
     currentBank = juce::jlimit (0, kNumBanks - 1, bank);
 }
 
+void LMOneAudioProcessor::setCurrentSlot (int slot) noexcept
+{
+    currentSlot = juce::jlimit (-1, kBankSlots - 1, slot);
+}
+
 void LMOneAudioProcessor::loadSlot (int slot)
 {
     if (slot < 0 || slot >= kBankSlots) return;
@@ -219,6 +225,7 @@ void LMOneAudioProcessor::loadSlot (int slot)
     const auto& s = library[(size_t) currentBank][(size_t) slot];
     if (! s.filled) return;
 
+    currentSlot = slot;
     workingPattern = s.pattern;
     workingPattern.numLanes = DrumKit::kNumVoices;
     publishPattern (workingPattern);
@@ -232,6 +239,7 @@ void LMOneAudioProcessor::saveSlot (int slot)
     if (slot < 0 || slot >= kBankSlots || currentBank < kNumFactoryBanks)
         return;   // factory banks are read-only
 
+    currentSlot = slot;
     auto& s = library[(size_t) currentBank][(size_t) slot];
     s.pattern = workingPattern;
     s.tempo   = juce::roundToInt (getSeqTempo());
@@ -525,7 +533,7 @@ juce::ValueTree LMOneAudioProcessor::captureStateTree()
     auto state = apvts.copyState();   // type "PARAMS" (params + globals)
 
     // Drop any stale children we re-add below (a prior restore may have left them).
-    for (auto* name : { "KIT", "PATTERN", "PATTERNS" })
+    for (auto* name : { "KIT", "PATTERN", "PATTERNS", "BANKSEL" })
         if (auto stale = state.getChildWithName (name); stale.isValid())
             state.removeChild (stale, nullptr);
 
@@ -549,6 +557,12 @@ juce::ValueTree LMOneAudioProcessor::captureStateTree()
 
     // Working sequence.
     state.appendChild (workingPattern.toValueTree(), nullptr);   // type "PATTERN"
+
+    // Bank/slot selection, so the highlighted preset survives reopen / reload.
+    juce::ValueTree banksel ("BANKSEL");
+    banksel.setProperty ("bank", currentBank, nullptr);
+    banksel.setProperty ("slot", currentSlot, nullptr);
+    state.appendChild (banksel, nullptr);
 
     return state;
 }
@@ -602,6 +616,13 @@ void LMOneAudioProcessor::restoreStateTree (const juce::ValueTree& tree)
         const int cur = juce::jlimit (0, kBankSlots - 1, (int) pts.getProperty ("current", 0));
         for (const auto& pv : pts)
             if ((int) pv.getProperty ("slot", -1) == cur) { workingPattern.fromValueTree (pv); break; }
+    }
+
+    // Restore the highlighted bank/slot (cosmetic — the pattern itself is above).
+    if (auto bs = tree.getChildWithName ("BANKSEL"); bs.isValid())
+    {
+        currentBank = juce::jlimit (0, kNumBanks - 1, (int) bs.getProperty ("bank", 0));
+        currentSlot = juce::jlimit (-1, kBankSlots - 1, (int) bs.getProperty ("slot", 0));
     }
 
     // Lane count is fixed by the instrument, not by the saved pattern.

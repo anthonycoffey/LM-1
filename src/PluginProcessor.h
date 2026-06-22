@@ -104,6 +104,8 @@ public:
     static constexpr int kNumFactoryBanks = 5;
     int  getCurrentBank() const noexcept { return currentBank; }
     void setCurrentBank (int bank);
+    int  getCurrentSlot() const noexcept { return currentSlot; }   // highlighted slot (-1 = none)
+    void setCurrentSlot (int slot) noexcept;
     void loadSlot (int slot);                  // current bank -> working sequence (+ tempo)
     void saveSlot (int slot);                  // working sequence -> current bank (user banks only)
     bool slotFilled (int slot) const;          // is a slot in the current bank populated?
@@ -189,6 +191,7 @@ private:
     };
     std::array<std::array<PresetSlot, (size_t) kBankSlots>, (size_t) kNumBanks> library;
     int currentBank = 0;
+    int currentSlot = 0;   // highlighted/loaded slot within the current bank (-1 = none)
 
     void loadFactoryLibrary();
     void loadUserLibrary();

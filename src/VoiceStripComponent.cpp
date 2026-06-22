@@ -27,7 +27,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     auto setupKnob = [this] (juce::Slider& s)
     {
         s.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 56, 13);
+        s.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);   // knob pointer is the cue
         s.setDoubleClickReturnValue (true, 0.0); // center detent / reset
         addAndMakeVisible (s);
     };
@@ -118,15 +118,15 @@ void VoiceStripComponent::resized()
     soloButton.setBounds (bottom.reduced (1));
     r.removeFromBottom (4);
 
-    auto swingArea = r.removeFromBottom (54);
+    auto swingArea = r.removeFromBottom (58);
     swingCaption.setBounds (swingArea.removeFromBottom (11));
     swingSlider.setBounds (swingArea);
 
-    auto tuneArea = r.removeFromBottom (54);
+    auto tuneArea = r.removeFromBottom (58);
     tuneCaption.setBounds (tuneArea.removeFromBottom (11));
     tuneSlider.setBounds (tuneArea);
 
-    auto panArea = r.removeFromBottom (54);
+    auto panArea = r.removeFromBottom (58);
     panCaption.setBounds (panArea.removeFromBottom (11));
     panSlider.setBounds (panArea);
 

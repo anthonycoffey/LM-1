@@ -106,8 +106,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
                 if (result == 0)        // 0 = Cancel
                     return;
 
-                processor.clearPattern();
-                selectedSlot = -1;      // nothing loaded now — click a slot to reload
+                processor.clearPattern();   // also sets the processor's slot to "none"
                 grid.reloadFromProcessor();
                 refreshBankUI();
             }));
@@ -162,7 +161,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
         b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
         b->onClick = [this, i]
         {
-            selectedSlot = i;
+            processor.setCurrentSlot (i);
             if (processor.slotFilled (i))
             {
                 processor.loadSlot (i);
@@ -174,7 +173,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
         slotButtons.add (b);
     }
 
-    saveButton.onClick = [this] { processor.saveSlot (selectedSlot); refreshBankUI(); };
+    saveButton.onClick = [this] { processor.saveSlot (processor.getCurrentSlot()); refreshBankUI(); };
     addAndMakeVisible (saveButton);
 
     refreshBankUI();
@@ -245,7 +244,7 @@ void LMOneAudioProcessorEditor::refreshBankUI()
     for (int i = 0; i < slotButtons.size(); ++i)
     {
         const bool filled = processor.slotFilled (i);
-        slotButtons[i]->setToggleState (i == selectedSlot, juce::dontSendNotification);
+        slotButtons[i]->setToggleState (i == processor.getCurrentSlot(), juce::dontSendNotification);
         slotButtons[i]->setColour (juce::TextButton::buttonColourId,
                                    filled ? juce::Colour (0xff2c2926) : juce::Colour (0xff191817));
         slotButtons[i]->setTooltip (filled ? processor.slotName (i) : juce::String ("(empty)"));
@@ -261,12 +260,14 @@ void LMOneAudioProcessorEditor::gotoBank (int newBank)
     // them (the jukebox feel). After a Clear nothing is selected, so fall back
     // to the first slot. An empty slot loads nothing and leaves the grid alone,
     // which keeps an unsaved beat intact when you browse to a blank user bank.
-    if (selectedSlot < 0)
-        selectedSlot = 0;
+    int slot = processor.getCurrentSlot();
+    if (slot < 0)
+        slot = 0;
+    processor.setCurrentSlot (slot);
 
-    if (processor.slotFilled (selectedSlot))
+    if (processor.slotFilled (slot))
     {
-        processor.loadSlot (selectedSlot);
+        processor.loadSlot (slot);
         grid.reloadFromProcessor();
     }
 
