@@ -40,16 +40,12 @@ public:
         }
         else
         {
-            // "load" — a small folder.
-            auto f = area.withSizeKeepingCentre (juce::jmin (area.getWidth() - 8.0f, 18.0f),
-                                                 juce::jmin (area.getHeight() - 6.0f, 12.0f));
-            const float tabW = f.getWidth() * 0.5f;
-            const float tabH = f.getHeight() * 0.30f;
-            juce::Path p;
-            p.addRoundedRectangle (f.getX(), f.getY() + tabH, f.getWidth(), f.getHeight() - tabH, 1.5f);
-            p.addRoundedRectangle (f.getX(), f.getY(), tabW, tabH * 2.0f, 1.5f);
-            g.setColour (juce::Colours::white.withAlpha (0.85f));
-            g.fillPath (p);
+            // "load" — a folder glyph, drawn directly (not fitted), so it shows at
+            // full size or not at all — never truncated to "...".
+            g.setColour (juce::Colours::white.withAlpha (0.9f));
+            g.setFont (juce::FontOptions (15.0f));
+            g.drawText (juce::String::fromUTF8 ("\xF0\x9F\x93\x81"),   // U+1F4C1 file folder
+                        getLocalBounds(), juce::Justification::centred);
         }
     }
 
