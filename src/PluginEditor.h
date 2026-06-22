@@ -84,6 +84,7 @@ private:
     // Styling: wood side cheeks + orange section frames.
     static constexpr int kCheek = 52;       // thicker wood cheeks
     static constexpr int kBottomLip = 12;   // wood lip / breathing room below the sequencer
+    static constexpr int kGap = 12;         // breathing room between the wood and the content
     static constexpr int kLabelStrip = 14;
     juce::Image          woodImage;
     juce::Rectangle<int> rGlobals, rMixer, rSeq;

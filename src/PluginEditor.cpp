@@ -207,7 +207,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek, 820 + kBottomLip + 12);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 820 + kBottomLip + 12);
 }
 
 LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
@@ -381,11 +381,11 @@ void LMOneAudioProcessorEditor::paint (juce::Graphics& g)
     // Title.
     g.setColour (LMColours::orange);
     g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
-    g.drawText ("LM-1", kCheek + 12, 8, 200, 26, juce::Justification::centredLeft);
+    g.drawText ("LM-1", kCheek + kGap + 12, 8, 200, 26, juce::Justification::centredLeft);
     g.setColour (juce::Colours::grey);
     g.setFont (juce::FontOptions (12.0f));
     g.drawText ("12-channel drum machine inspired by the LM-1",
-                kCheek + 92, 12, getWidth() - 2 * kCheek - 100, 18, juce::Justification::centredLeft);
+                kCheek + kGap + 92, 12, getWidth() - 2 * (kCheek + kGap) - 100, 18, juce::Justification::centredLeft);
 
     // Orange section frames with labels on the top border.
     drawSection (g, rGlobals, "GLOBAL");
@@ -418,6 +418,8 @@ void LMOneAudioProcessorEditor::resized()
     auto area = getLocalBounds();
     area.removeFromLeft  (kCheek);                  // wood cheeks
     area.removeFromRight (kCheek);
+    area.removeFromLeft  (kGap);                    // breathing room between wood and content
+    area.removeFromRight (kGap);
     area.removeFromTop   (34);                       // title bar
     area.removeFromBottom (kBottomLip);              // wood lip / gap beneath the sequencer
 
