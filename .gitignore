@@ -1,0 +1,14 @@
+# Build output (CMake + JUCE fetch + Xcode + plugin artefacts)
+/build/
+
+# macOS
+.DS_Store
+*.swp
+
+# IDE / editor
+.vscode/
+.idea/
+*.user
+
+# Misc
+*.log

@@ -1,0 +1,407 @@
+#include "PluginProcessor.h"
+#include "PluginEditor.h"
+
+#if LMONE_HAS_BINARY_DATA
+ #include "BinaryData.h"
+#endif
+
+//==============================================================================
+LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
+    : AudioProcessorEditor (&p), processor (p), grid (p), midiDrag (p)
+{
+    setLookAndFeel (&lookAndFeel);
+
+   #if LMONE_HAS_BINARY_DATA
+    for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
+        if (juce::String (BinaryData::originalFilenames[i]).equalsIgnoreCase ("wood.jpeg"))
+        {
+            int sz = 0;
+            if (auto* d = BinaryData::getNamedResource (BinaryData::namedResourceList[i], sz))
+                woodImage = juce::ImageFileFormat::loadFrom (d, (size_t) sz);
+            break;
+        }
+   #endif
+
+    // One mixer strip per channel (12). The open-hat voice shares the Hi-Hat
+    // channel, so it has no strip of its own.
+    for (int i = 0; i < DrumKit::kNumChannels; ++i)
+    {
+        auto* s = new VoiceStripComponent (processor, i);
+        addAndMakeVisible (s);
+        strips.add (s);
+    }
+
+    auto setupSlider = [this] (juce::Slider& s, juce::Label& lab, const juce::String& text)
+    {
+        s.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 18);
+        addAndMakeVisible (s);
+        lab.setText (text, juce::dontSendNotification);
+        lab.setJustificationType (juce::Justification::centred);
+        addAndMakeVisible (lab);
+    };
+
+    setupSlider (masterSlider, masterLabel, "Master");
+    setupSlider (lofiSlider,   lofiLabel,   "Lo-Fi");
+    setupSlider (tuneSlider,   tuneLabel,   "Tune");
+
+    masterAttach = std::make_unique<SliderAttachment> (processor.apvts, "masterGain", masterSlider);
+    lofiAttach   = std::make_unique<SliderAttachment> (processor.apvts, "lofi",       lofiSlider);
+    tuneAttach   = std::make_unique<SliderAttachment> (processor.apvts, "tune",       tuneSlider);
+
+    // --- Transport bar -------------------------------------------------------
+    seqButton.setClickingTogglesState (true);
+    seqButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::seagreen);
+    addAndMakeVisible (seqButton);
+    seqAttach = std::make_unique<ButtonAttachment> (processor.apvts, "seqEnabled", seqButton);
+
+    playButton.setClickingTogglesState (true);
+    playButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::green);
+    playButton.setToggleState (processor.isInternalPlaying(), juce::dontSendNotification);
+    playButton.setButtonText (processor.isInternalPlaying() ? "Stop" : "Play");
+    playButton.onClick = [this]
+    {
+        const bool playing = playButton.getToggleState();
+        processor.setInternalPlaying (playing);
+        playButton.setButtonText (playing ? "Stop" : "Play");
+    };
+    addAndMakeVisible (playButton);
+
+    tempoLabel.setText ("Tempo", juce::dontSendNotification);
+    tempoLabel.setJustificationType (juce::Justification::centredRight);
+    addAndMakeVisible (tempoLabel);
+
+    tempoSlider.setSliderStyle (juce::Slider::LinearHorizontal);
+    tempoSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0); // value shows on the LED
+    addAndMakeVisible (tempoSlider);
+    tempoAttach = std::make_unique<SliderAttachment> (processor.apvts, "seqTempo", tempoSlider);
+
+    addAndMakeVisible (stepLed);
+    addAndMakeVisible (tempoLed);
+
+    stepsLabel.setText ("Steps", juce::dontSendNotification);
+    stepsLabel.setJustificationType (juce::Justification::centredRight);
+    addAndMakeVisible (stepsLabel);
+
+    stepsBox.addItem ("8",  8);
+    stepsBox.addItem ("16", 16);
+    stepsBox.addItem ("32", 32);
+    stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
+    stepsBox.onChange = [this]
+    {
+        const int s = stepsBox.getSelectedId();
+        if (s > 0) { processor.setPatternLength (s); grid.reloadFromProcessor(); }
+    };
+    addAndMakeVisible (stepsBox);
+
+    clearButton.onClick = [this]
+    {
+        processor.clearPattern();
+        grid.reloadFromProcessor();
+    };
+    addAndMakeVisible (clearButton);
+
+    // Gear/options menu — keeps low-frequency actions off the panel.
+    optionsButton.setButtonText (juce::String::fromUTF8 ("\xE2\x9A\x99")); // gear
+    optionsButton.onClick = [this]
+    {
+        juce::PopupMenu m;
+        m.addItem (1, juce::String::fromUTF8 ("Export MIDI to file\xE2\x80\xA6"));
+        m.addSeparator();
+        m.addItem (2, juce::String::fromUTF8 ("Save preset\xE2\x80\xA6"));
+        m.addItem (3, juce::String::fromUTF8 ("Load preset\xE2\x80\xA6"));
+
+        const auto presets = presetManager.list();
+        if (! presets.isEmpty())
+        {
+            juce::PopupMenu sub;
+            for (int i = 0; i < presets.size(); ++i)
+                sub.addItem (100 + i, presets[i].getFileNameWithoutExtension());
+            m.addSubMenu ("Load recent", sub);
+        }
+
+        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&optionsButton),
+            [this, presets] (int result)
+            {
+                if      (result == 1) exportMidiToFile();
+                else if (result == 2) savePresetDialog();
+                else if (result == 3) loadPresetDialog();
+                else if (result >= 100 && result - 100 < presets.size())
+                    presetManager.load (presets[result - 100]);
+            });
+    };
+    addAndMakeVisible (optionsButton);
+
+    // Pattern bank selector (radio group).
+    patternLabel.setText ("Pat", juce::dontSendNotification);
+    patternLabel.setJustificationType (juce::Justification::centredRight);
+    addAndMakeVisible (patternLabel);
+    addAndMakeVisible (patternLed);
+    for (int i = 0; i < processor.getNumPatterns(); ++i)
+    {
+        auto* b = new juce::TextButton (juce::String (i + 1));
+        b->setClickingTogglesState (true);
+        b->setRadioGroupId (1001);
+        b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
+        b->onClick = [this, i] { processor.selectPattern (i); grid.reloadFromProcessor(); };
+        addAndMakeVisible (b);
+        patternButtons.add (b);
+    }
+    updatePatternButtons();
+
+    addAndMakeVisible (grid);
+    addAndMakeVisible (midiDrag);
+
+    processor.addChangeListener (this); // refresh sample labels + grid when state changes
+    startTimerHz (20);                  // step readout + playhead
+
+    const int stripW = 74;
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek, 760);
+}
+
+LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
+{
+    setLookAndFeel (nullptr);
+    stopTimer();
+    processor.removeChangeListener (this);
+}
+
+void LMOneAudioProcessorEditor::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    for (auto* s : strips)
+        s->refreshSourceLabel();
+
+    grid.reloadFromProcessor();
+    stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
+    updatePatternButtons();
+}
+
+void LMOneAudioProcessorEditor::timerCallback()
+{
+    const int step = processor.getCurrentStep();
+    stepLed.setText (step < 0 ? juce::String ("--") : juce::String (step + 1));
+    tempoLed.setText (juce::String (juce::roundToInt (processor.getSeqTempo())));
+    grid.setPlayingStep (step);
+}
+
+void LMOneAudioProcessorEditor::exportMidiToFile()
+{
+    midiChooser = std::make_unique<juce::FileChooser> (
+        "Export pattern as MIDI",
+        juce::File::getSpecialLocation (juce::File::userMusicDirectory).getChildFile ("LM-1 pattern.mid"),
+        "*.mid");
+    midiChooser->launchAsync (
+        juce::FileBrowserComponent::saveMode
+        | juce::FileBrowserComponent::canSelectFiles
+        | juce::FileBrowserComponent::warnAboutOverwriting,
+        [this] (const juce::FileChooser& fc)
+        {
+            auto f = fc.getResult();
+            if (f == juce::File()) return;
+            if (! f.hasFileExtension ("mid")) f = f.withFileExtension ("mid");
+            const auto mf = MidiExport::build (processor.getPattern(), (double) processor.getSeqTempo());
+            if (auto os = std::unique_ptr<juce::FileOutputStream> (f.createOutputStream()))
+            {
+                os->setPosition (0);
+                os->truncate();
+                mf.writeTo (*os, 1);
+            }
+        });
+}
+
+void LMOneAudioProcessorEditor::updatePatternButtons()
+{
+    const int cur = processor.getCurrentPattern();
+    for (int i = 0; i < patternButtons.size(); ++i)
+        patternButtons[i]->setToggleState (i == cur, juce::dontSendNotification);
+    patternLed.setText (juce::String (cur + 1));
+}
+
+void LMOneAudioProcessorEditor::savePresetDialog()
+{
+    presetChooser = std::make_unique<juce::FileChooser> (
+        "Save preset",
+        PresetManager::getPresetDir().getChildFile ("My Preset.lm1preset"),
+        "*.lm1preset");
+    presetChooser->launchAsync (
+        juce::FileBrowserComponent::saveMode
+        | juce::FileBrowserComponent::canSelectFiles
+        | juce::FileBrowserComponent::warnAboutOverwriting,
+        [this] (const juce::FileChooser& fc)
+        {
+            const auto f = fc.getResult();
+            if (f != juce::File())
+                presetManager.save (f);
+        });
+}
+
+void LMOneAudioProcessorEditor::loadPresetDialog()
+{
+    presetChooser = std::make_unique<juce::FileChooser> (
+        "Load preset", PresetManager::getPresetDir(), "*.lm1preset");
+    presetChooser->launchAsync (
+        juce::FileBrowserComponent::openMode
+        | juce::FileBrowserComponent::canSelectFiles,
+        [this] (const juce::FileChooser& fc)
+        {
+            const auto f = fc.getResult();
+            if (f != juce::File())
+                presetManager.load (f);   // restoreStateTree -> changeListener refreshes UI
+        });
+}
+
+//==============================================================================
+void LMOneAudioProcessorEditor::paint (juce::Graphics& g)
+{
+    g.fillAll (LMColours::faceplate);
+
+    // Wood side cheeks.
+    auto full = getLocalBounds();
+    auto leftCheek  = full.removeFromLeft (kCheek);
+    auto rightCheek = full.removeFromRight (kCheek);
+    if (woodImage.isValid())
+    {
+        // Clip each draw to its cheek — fillDestination scales to cover and would
+        // otherwise overflow the strip and cover the whole panel.
+        {
+            juce::Graphics::ScopedSaveState s (g);
+            g.reduceClipRegion (leftCheek);
+            g.drawImage (woodImage, leftCheek.toFloat(), juce::RectanglePlacement::fillDestination);
+        }
+        {
+            juce::Graphics::ScopedSaveState s (g);
+            g.reduceClipRegion (rightCheek);
+            g.drawImage (woodImage, rightCheek.toFloat(), juce::RectanglePlacement::fillDestination);
+        }
+    }
+    else
+    {
+        g.setGradientFill (juce::ColourGradient (LMColours::wood1, (float) leftCheek.getX(), 0.0f,
+                                                 LMColours::wood2, (float) leftCheek.getRight(), 0.0f, false));
+        g.fillRect (leftCheek);
+        g.setGradientFill (juce::ColourGradient (LMColours::wood2, (float) rightCheek.getX(), 0.0f,
+                                                 LMColours::wood1, (float) rightCheek.getRight(), 0.0f, false));
+        g.fillRect (rightCheek);
+    }
+
+    // Title.
+    g.setColour (LMColours::orange);
+    g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
+    g.drawText ("LM-1", kCheek + 12, 8, 200, 26, juce::Justification::centredLeft);
+    g.setColour (juce::Colours::grey);
+    g.setFont (juce::FontOptions (12.0f));
+    g.drawText ("Faithful 12-channel emulation of the LM-1 by Anthony Coffey",
+                kCheek + 92, 12, getWidth() - 2 * kCheek - 100, 18, juce::Justification::centredLeft);
+
+    // Orange section frames with labels on the top border.
+    drawSection (g, rGlobals, "GLOBAL");
+    drawSection (g, rMixer,   "MIXER");
+    drawSection (g, rSeq,     "SEQUENCER");
+}
+
+void LMOneAudioProcessorEditor::drawSection (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title)
+{
+    if (r.getWidth() < 24 || r.getHeight() < 24)
+        return;
+
+    g.setColour (LMColours::orange.withAlpha (0.8f));
+    g.drawRoundedRectangle (r.toFloat().reduced (3.0f), 5.0f, 1.3f);
+
+    if (title.isNotEmpty())
+    {
+        g.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+        const int tw = g.getCurrentFont().getStringWidth (title) + 12;
+        juce::Rectangle<int> lab (r.getX() + 16, r.getY() + 2, tw, 13);
+        g.setColour (LMColours::faceplate);   // break the border behind the text
+        g.fillRect (lab);
+        g.setColour (LMColours::orange);
+        g.drawText (title, lab, juce::Justification::centred);
+    }
+}
+
+void LMOneAudioProcessorEditor::resized()
+{
+    auto area = getLocalBounds();
+    area.removeFromLeft  (kCheek);                  // wood cheeks
+    area.removeFromRight (kCheek);
+    area.removeFromTop   (34);                       // title bar
+
+    // MASTER — global knobs.
+    rGlobals = area.removeFromTop (94);
+    {
+        auto g = rGlobals;
+        g.removeFromTop (kLabelStrip);              // room for the section label
+        g = g.reduced (12, 6);
+        const int kW = 92;
+        auto place = [&] (juce::Slider& s, juce::Label& lab)
+        {
+            auto cell = g.removeFromLeft (kW);
+            lab.setBounds (cell.removeFromTop (16));
+            s.setBounds (cell);
+        };
+        place (masterSlider, masterLabel);
+        place (lofiSlider,   lofiLabel);
+        place (tuneSlider,   tuneLabel);
+    }
+
+    // SEQUENCER — transport controls + pattern slots + step grid, all together.
+    rSeq = area.removeFromBottom (kLabelStrip + 32 + 28 + 226);
+    {
+        auto seq = rSeq;
+        seq.removeFromTop (kLabelStrip);            // room for the section label
+
+        // Transport controls.
+        auto trb = seq.removeFromTop (32).reduced (8, 4);
+        midiDrag.setBounds      (trb.removeFromRight (92));
+        trb.removeFromRight (6);
+        optionsButton.setBounds (trb.removeFromRight (30));
+        trb.removeFromRight (12);
+        stepLed.setBounds       (trb.removeFromRight (50));
+        trb.removeFromRight (14);
+        seqButton.setBounds  (trb.removeFromLeft (50));
+        trb.removeFromLeft (8);
+        playButton.setBounds (trb.removeFromLeft (56));
+        trb.removeFromLeft (12);
+        stepsLabel.setBounds (trb.removeFromLeft (44));
+        stepsBox.setBounds   (trb.removeFromLeft (54));
+        trb.removeFromLeft (8);
+        clearButton.setBounds (trb.removeFromLeft (54));
+        trb.removeFromLeft (12);
+        tempoLabel.setBounds (trb.removeFromLeft (50));
+        tempoLed.setBounds (trb.removeFromRight (54).reduced (0, 2));
+        trb.removeFromRight (6);
+        tempoSlider.setBounds (trb);
+
+        // Pattern slots.
+        auto pr = seq.removeFromTop (28).reduced (8, 3);
+        patternLabel.setBounds (pr.removeFromLeft (32));
+        patternLed.setBounds (pr.removeFromLeft (24).reduced (0, 1));
+        pr.removeFromLeft (8);
+        const int nb = patternButtons.size();
+        if (nb > 0)
+        {
+            const int bw = juce::jmin (44, pr.getWidth() / nb);
+            for (int i = 0; i < nb; ++i)
+                patternButtons[i]->setBounds (pr.removeFromLeft (bw).reduced (1, 0));
+        }
+
+        // Step grid fills the rest.
+        grid.setBounds (seq.reduced (8, 4));
+    }
+
+    // MIXER — voice strips fill the remaining middle.
+    rMixer = area;
+    {
+        auto m = rMixer;
+        m.removeFromTop (kLabelStrip);              // room for the section label
+        auto stripsArea = m.reduced (8, 4);
+        const int n = strips.size();
+        if (n > 0)
+        {
+            const int w = stripsArea.getWidth() / n;
+            for (int i = 0; i < n; ++i)
+                strips[i]->setBounds (stripsArea.getX() + i * w, stripsArea.getY(),
+                                      w - 2, stripsArea.getHeight());
+        }
+    }
+}
