@@ -155,7 +155,7 @@ juce::String LMOneAudioProcessor::getVoiceSourceLabel (int voiceIndex) const
     if (vs.sourceTag == "file")
         return juce::File (vs.sourcePath).getFileName();
 
-    return vs.isProcedural ? juce::String ("(procedural)") : vs.sourceTag;
+    return {};   // default/factory sound → show nothing (only user-loaded files get a label)
 }
 
 //==============================================================================

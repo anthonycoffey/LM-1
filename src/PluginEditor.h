@@ -73,7 +73,8 @@ private:
     std::unique_ptr<SliderAttachment> masterAttach, lofiAttach, tuneAttach, shuffleAttach;
 
     // Styling: wood side cheeks + orange section frames.
-    static constexpr int kCheek = 26;
+    static constexpr int kCheek = 52;       // thicker wood cheeks
+    static constexpr int kBottomLip = 12;   // wood lip / breathing room below the sequencer
     static constexpr int kLabelStrip = 14;
     juce::Image          woodImage;
     juce::Rectangle<int> rGlobals, rMixer, rSeq;

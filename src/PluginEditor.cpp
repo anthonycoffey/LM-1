@@ -185,7 +185,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek, 820);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek, 820 + kBottomLip);
 }
 
 LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
@@ -382,6 +382,7 @@ void LMOneAudioProcessorEditor::resized()
     area.removeFromLeft  (kCheek);                  // wood cheeks
     area.removeFromRight (kCheek);
     area.removeFromTop   (34);                       // title bar
+    area.removeFromBottom (kBottomLip);              // wood lip / gap beneath the sequencer
 
     // MASTER — global knobs.
     rGlobals = area.removeFromTop (94);

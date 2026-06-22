@@ -109,10 +109,7 @@ void VoiceStripComponent::resized()
     sourceLabel.setBounds (r.removeFromTop (13));
     r.removeFromTop (4);
 
-    // "VOL" caption sits above the level fader (its value box is below it).
-    levelCaption.setBounds (r.removeFromTop (11));
-
-    // Bottom-up: mute/solo row, then tune knob, then pan knob.
+    // Bottom-up: mute/solo row, then swing / tune / pan knobs (label below each).
     auto bottom = r.removeFromBottom (20);
     muteButton.setBounds (bottom.removeFromLeft (bottom.getWidth() / 2).reduced (1));
     soloButton.setBounds (bottom.reduced (1));
@@ -132,6 +129,7 @@ void VoiceStripComponent::resized()
 
     r.removeFromBottom (4);
 
-    // Remaining space is the level fader.
+    // "VOL" caption sits below the fader, matching the label-below-control pattern.
+    levelCaption.setBounds (r.removeFromBottom (11));
     levelSlider.setBounds (r);
 }
