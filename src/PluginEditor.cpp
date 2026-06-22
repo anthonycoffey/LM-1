@@ -44,12 +44,21 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     setupSlider (masterSlider,  masterLabel,  "Master");
     setupSlider (lofiSlider,    lofiLabel,    "Lo-Fi");
     setupSlider (tuneSlider,    tuneLabel,    "Tune");
-    setupSlider (shuffleSlider, shuffleLabel, "Shuffle");
+
+    // Global shuffle: label + < > steppers + LED readout (no knob).
+    shuffleLabel.setText ("Shuffle", juce::dontSendNotification);
+    shuffleLabel.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (shuffleLabel);
+    shufPrev.onClick = [this] { ChoiceParam::step (processor.apvts.getParameter ("shuffle"), -1); refreshShuffleLeds(); };
+    shufNext.onClick = [this] { ChoiceParam::step (processor.apvts.getParameter ("shuffle"), +1); refreshShuffleLeds(); };
+    addAndMakeVisible (shufPrev);
+    addAndMakeVisible (shufNext);
+    shuffleLed.setFontHeight (10.0f);
+    addAndMakeVisible (shuffleLed);
 
     masterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "masterGain", masterSlider);
     lofiAttach    = std::make_unique<SliderAttachment> (processor.apvts, "lofi",       lofiSlider);
     tuneAttach    = std::make_unique<SliderAttachment> (processor.apvts, "tune",       tuneSlider);
-    shuffleAttach = std::make_unique<SliderAttachment> (processor.apvts, "shuffle",    shuffleSlider);
 
     // --- Transport bar -------------------------------------------------------
     // PLAY toggles the internal clock; the lamp (not the label/colour) shows state.
@@ -224,6 +233,7 @@ void LMOneAudioProcessorEditor::timerCallback()
 
     playButton.setLedOn (step >= 0);                 // lit while the sequencer rolls
     recButton.setLedOn (processor.isRecordArmed());
+    refreshShuffleLeds();                            // catch host/automation changes
 
     if (processor.pollRecordedNotes())               // drain live-recorded hits onto the grid
         grid.reloadFromProcessor();
@@ -289,6 +299,13 @@ void LMOneAudioProcessorEditor::gotoBank (int newBank)
     }
 
     refreshBankUI();
+}
+
+void LMOneAudioProcessorEditor::refreshShuffleLeds()
+{
+    shuffleLed.setText (ChoiceParam::name (processor.apvts.getParameter ("shuffle")));
+    for (auto* s : strips)
+        s->refreshShuffle();
 }
 
 void LMOneAudioProcessorEditor::savePresetDialog()
@@ -417,7 +434,15 @@ void LMOneAudioProcessorEditor::resized()
         place (masterSlider,  masterLabel);
         place (lofiSlider,    lofiLabel);
         place (tuneSlider,    tuneLabel);
-        place (shuffleSlider, shuffleLabel);
+        {
+            // Shuffle cell: label on top, < > steppers, LED readout below.
+            auto cell = g.removeFromLeft (kW);
+            shuffleLabel.setBounds (cell.removeFromTop (16));
+            shuffleLed.setBounds (cell.removeFromBottom (18).reduced (8, 1));
+            auto arrows = cell.withSizeKeepingCentre (54, juce::jmin (cell.getHeight(), 22));
+            shufPrev.setBounds (arrows.removeFromLeft (27));
+            shufNext.setBounds (arrows);
+        }
     }
 
     // SEQUENCER — transport controls + pattern slots + step grid, all together.
