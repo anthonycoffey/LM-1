@@ -30,6 +30,7 @@ LMOneAudioProcessor::LMOneAudioProcessor()
         voiceParams[(size_t) i].tune  = apvts.getRawParameterValue (id + "_tune");
         voiceParams[(size_t) i].mute  = apvts.getRawParameterValue (id + "_mute");
         voiceParams[(size_t) i].solo  = apvts.getRawParameterValue (id + "_solo");
+        voiceParams[(size_t) i].swing = apvts.getRawParameterValue (id + "_swing");
     }
 
     seqTempoParam = apvts.getRawParameterValue ("seqTempo");
@@ -100,6 +101,12 @@ LMOneAudioProcessor::createParameterLayout()
 
         layout.add (std::make_unique<AudioParameterBool> (
             ParameterID { id + "_solo", 1 }, n + " Solo", false));
+
+        // Per-track shuffle amount, added on top of the global Shuffle for this
+        // track (0 = no extra swing; the track just follows the global knob).
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { id + "_swing", 1 }, n + " Swing",
+            NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.0f));
     }
 
     return layout;
@@ -406,6 +413,21 @@ void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 tr.bpm         = pos->getBpm().orFallback (tr.bpm);
                 tr.hostPpq     = pos->getPpqPosition().orFallback (0.0);
             }
+
+        // Per-lane swing amount = global Shuffle + this lane's per-track Shuffle
+        // (clamped 0..1). A lane follows the channel it renders through, so the
+        // open hat (voice 12) tracks the Hi-hats channel.
+        const float globalSwing = tr.swing;
+        float laneSwing[Pattern::kMaxLanes];
+        for (int lane = 0; lane < Pattern::kMaxLanes; ++lane)
+        {
+            float perTrack = 0.0f;
+            if (lane < DrumKit::kNumVoices)
+                if (auto* sp = voiceParams[(size_t) channelForVoice (lane)].swing)
+                    perTrack = sp->load();
+            laneSwing[(size_t) lane] = juce::jlimit (0.0f, 1.0f, globalSwing + perTrack);
+        }
+        tr.laneSwing = laneSwing;
 
         const Pattern pat = patternState.slots[(size_t) patternState.live.load (std::memory_order_acquire)];
         sequencer.process (pat, tr, n, [&] (int lane, int off, float vel) { addEvent (lane, off, vel); });

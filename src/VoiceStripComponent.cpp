@@ -21,7 +21,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     addAndMakeVisible (sourceLabel);
 
     levelSlider.setSliderStyle (juce::Slider::LinearVertical);
-    levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 56, 14);
+    levelSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);   // the fader itself is the cue
     addAndMakeVisible (levelSlider);
 
     auto setupKnob = [this] (juce::Slider& s)
@@ -33,6 +33,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     };
     setupKnob (panSlider);
     setupKnob (tuneSlider);
+    setupKnob (swingSlider);
 
     auto setupCaption = [this] (juce::Label& l, const juce::String& t)
     {
@@ -42,8 +43,10 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
         l.setColour (juce::Label::textColourId, juce::Colours::grey);
         addAndMakeVisible (l);
     };
-    setupCaption (panCaption,  "PAN");
-    setupCaption (tuneCaption, "TUNE");
+    setupCaption (levelCaption, "VOL");
+    setupCaption (panCaption,   "PAN");
+    setupCaption (tuneCaption,  "TUNE");
+    setupCaption (swingCaption, "SHUF");
 
     muteButton.setClickingTogglesState (true);
     soloButton.setClickingTogglesState (true);
@@ -58,6 +61,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     tuneAtt  = std::make_unique<SliderAttachment> (processor.apvts, id + "_tune",  tuneSlider);
     muteAtt  = std::make_unique<ButtonAttachment> (processor.apvts, id + "_mute",  muteButton);
     soloAtt  = std::make_unique<ButtonAttachment> (processor.apvts, id + "_solo",  soloButton);
+    swingAtt = std::make_unique<SliderAttachment> (processor.apvts, id + "_swing", swingSlider);
 
     updateSourceLabel();
 }
@@ -105,11 +109,18 @@ void VoiceStripComponent::resized()
     sourceLabel.setBounds (r.removeFromTop (13));
     r.removeFromTop (4);
 
+    // "VOL" caption sits above the level fader (its value box is below it).
+    levelCaption.setBounds (r.removeFromTop (11));
+
     // Bottom-up: mute/solo row, then tune knob, then pan knob.
     auto bottom = r.removeFromBottom (20);
     muteButton.setBounds (bottom.removeFromLeft (bottom.getWidth() / 2).reduced (1));
     soloButton.setBounds (bottom.reduced (1));
     r.removeFromBottom (4);
+
+    auto swingArea = r.removeFromBottom (54);
+    swingCaption.setBounds (swingArea.removeFromBottom (11));
+    swingSlider.setBounds (swingArea);
 
     auto tuneArea = r.removeFromBottom (54);
     tuneCaption.setBounds (tuneArea.removeFromBottom (11));

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(LM_One VERSION 0.1.1 LANGUAGES C CXX)
+project(LM_One VERSION 0.2.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,8 +30,8 @@ FetchContent_MakeAvailable(JUCE)
 # (and other hosts) can find it immediately after a build.
 # ---------------------------------------------------------------------------
 juce_add_plugin(LM_One
-    COMPANY_NAME                "Anthony Coffey"          # <-- change me
-    BUNDLE_ID                   "com.anthonycoffey.lmone" # <-- change me
+    COMPANY_NAME                "Anthony Coffey"
+    BUNDLE_ID                   "com.anthonycoffey.lmone"
     IS_SYNTH                    TRUE
     NEEDS_MIDI_INPUT            TRUE
     NEEDS_MIDI_OUTPUT           FALSE

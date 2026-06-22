@@ -33,11 +33,11 @@ private:
     juce::TextButton padButton;
     juce::TextButton loadButton { "Load" };
     juce::Label      sourceLabel;
-    juce::Slider     levelSlider, panSlider, tuneSlider;
-    juce::Label      panCaption, tuneCaption;
+    juce::Slider     levelSlider, panSlider, tuneSlider, swingSlider;
+    juce::Label      levelCaption, panCaption, tuneCaption, swingCaption;
     juce::TextButton muteButton { "M" }, soloButton { "S" };
 
-    std::unique_ptr<SliderAttachment> levelAtt, panAtt, tuneAtt;
+    std::unique_ptr<SliderAttachment> levelAtt, panAtt, tuneAtt, swingAtt;
     std::unique_ptr<ButtonAttachment> muteAtt, soloAtt;
     std::unique_ptr<juce::FileChooser> chooser;
 

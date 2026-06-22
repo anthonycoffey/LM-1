@@ -50,7 +50,9 @@ private:
     // Preset library: bank nav + 8 slot buttons + save.
     juce::OwnedArray<juce::TextButton> slotButtons;
     juce::Label      bankLabel;
-    juce::TextButton bankPrev, bankNext, saveButton { "Save" };
+    juce::ArrowButton bankPrev { "bankPrev", 0.5f, LMColours::orange };  // points left  (prev bank)
+    juce::ArrowButton bankNext { "bankNext", 0.0f, LMColours::orange };  // points right (next bank)
+    juce::TextButton  saveButton { "Save" };
     int              selectedSlot = 0;
     std::unique_ptr<juce::FileChooser> presetChooser;
 

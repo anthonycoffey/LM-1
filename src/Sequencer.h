@@ -16,6 +16,10 @@
 // Clock arbitration: the host transport wins whenever it is actively playing
 // (so bounces lock to the project grid); otherwise an internal Play/Stop clock
 // drives playback (for the Standalone or a stopped host).
+//
+// Swing: each lane carries its own swing amount (Transport::laneSwing, 0..1),
+// so a lane's odd 16ths are delayed by its own amount — straight lanes stay on
+// the grid while swung lanes fire late, each by however much it's dialled in.
 //==============================================================================
 class Sequencer
 {
@@ -29,14 +33,15 @@ public:
         double internalBpm     = 120.0;
         double sampleRate      = 44100.0;
         bool   seqEnabled      = true;
-        double swing           = 0.0;   // 0..1 shuffle amount (delays odd 16ths)
+        double swing           = 0.0;     // global fallback amount (used if laneSwing is null)
+        const float* laneSwing = nullptr; // per-lane swing amount [kMaxLanes], 0..1
     };
 
     void prepare (double newSampleRate) { sampleRate = newSampleRate; reset(); }
 
     void reset()
     {
-        lastAbsoluteStep = std::numeric_limits<long long>::min();
+        arm();
         internalPpq = 0.0;
         lastSource = Source::None;
         currentStepForUi.store (-1, std::memory_order_relaxed);
@@ -70,7 +75,7 @@ public:
         // restart the internal clock from the top (Play begins at step 1).
         if (src != lastSource)
         {
-            lastAbsoluteStep = std::numeric_limits<long long>::min();
+            arm();
             if (src == Source::Internal)
                 internalPpq = 0.0;
             lastSource = src;
@@ -84,23 +89,38 @@ public:
         const int    numLanes     = juce::jlimit (1, Pattern::kMaxLanes, pattern.numLanes);
         const double stepPpq      = 0.25; // 16th note
         const double ppqPerSample = (bpm / 60.0 / juce::jmax (1.0, tr.sampleRate)) ;
-        const double swingPpq     = juce::jlimit (0.0, 0.9, tr.swing) * 0.5 * stepPpq;
+
+        auto laneSwingAmt = [&tr] (int lane) -> double
+        {
+            return tr.laneSwing != nullptr ? (double) tr.laneSwing[(size_t) lane] : tr.swing;
+        };
 
         for (int i = 0; i < numSamples; ++i)
         {
-            const double ppq      = ppqAtStart + ppqPerSample * i;
+            const double    ppq      = ppqAtStart + ppqPerSample * i;
             const long long baseStep = (long long) std::floor (ppq / stepPpq);
-            const bool   odd      = (((baseStep % 2) + 2) % 2) == 1;
-            const double trigPpq  = (double) baseStep * stepPpq + (odd ? swingPpq : 0.0);
+            const bool      odd      = (((baseStep % 2) + 2) % 2) == 1;
+            const double    gridPpq  = (double) baseStep * stepPpq;
+            const int       step     = (int) (((baseStep % numSteps) + numSteps) % numSteps);
 
-            if (baseStep != lastAbsoluteStep && ppq + 1.0e-12 >= trigPpq)
+            // The UI playhead advances on the grid (so it always reads musically).
+            if (baseStep != lastUiStep && ppq + 1.0e-12 >= gridPpq)
             {
-                lastAbsoluteStep = baseStep;
-                const int step = (int) (((baseStep % numSteps) + numSteps) % numSteps);
+                lastUiStep = baseStep;
                 currentStepForUi.store (step, std::memory_order_relaxed);
+            }
 
-                for (int lane = 0; lane < numLanes; ++lane)
+            // Each lane fires at its own swung time: straight lanes on the grid,
+            // swung lanes delayed by their own amount on odd 16ths.
+            for (int lane = 0; lane < numLanes; ++lane)
+            {
+                const double swingPpq = odd ? juce::jlimit (0.0, 0.9, laneSwingAmt (lane)) * 0.5 * stepPpq
+                                            : 0.0;
+                const double laneTrig = gridPpq + swingPpq;
+
+                if (baseStep != laneLastStep[(size_t) lane] && ppq + 1.0e-12 >= laneTrig)
                 {
+                    laneLastStep[(size_t) lane] = baseStep;
                     const juce::uint8 v = pattern.vel[(size_t) lane][(size_t) step];
                     if (v > 0)
                         fire (lane, i, (float) v / 127.0f);
@@ -115,9 +135,17 @@ public:
 private:
     enum class Source { None, Host, Internal };
 
+    void arm() noexcept
+    {
+        lastUiStep = std::numeric_limits<long long>::min();
+        for (auto& s : laneLastStep)
+            s = std::numeric_limits<long long>::min();
+    }
+
     double sampleRate = 44100.0;
     double internalPpq = 0.0;
-    long long lastAbsoluteStep = std::numeric_limits<long long>::min();
+    long long lastUiStep = std::numeric_limits<long long>::min();
+    long long laneLastStep[Pattern::kMaxLanes] {};
     Source lastSource = Source::None;
     std::atomic<int> currentStepForUi { -1 };
 };

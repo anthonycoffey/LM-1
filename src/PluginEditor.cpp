@@ -151,8 +151,6 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     addAndMakeVisible (bankLabel);
     addAndMakeVisible (bankLed);
 
-    bankPrev.setButtonText (juce::String::fromUTF8 ("\xE2\x97\x80")); // left triangle
-    bankNext.setButtonText (juce::String::fromUTF8 ("\xE2\x96\xB6")); // right triangle
     bankPrev.onClick = [this] { gotoBank (processor.getCurrentBank() - 1); };
     bankNext.onClick = [this] { gotoBank (processor.getCurrentBank() + 1); };
     addAndMakeVisible (bankPrev);
@@ -188,7 +186,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek, 760);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek, 820);
 }
 
 LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
@@ -348,7 +346,7 @@ void LMOneAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawText ("LM-1", kCheek + 12, 8, 200, 26, juce::Justification::centredLeft);
     g.setColour (juce::Colours::grey);
     g.setFont (juce::FontOptions (12.0f));
-    g.drawText ("Faithful 12-channel emulation of the LM-1 by Anthony Coffey",
+    g.drawText ("12-channel drum machine inspired by the LM-1",
                 kCheek + 92, 12, getWidth() - 2 * kCheek - 100, 18, juce::Justification::centredLeft);
 
     // Orange section frames with labels on the top border.
@@ -411,7 +409,7 @@ void LMOneAudioProcessorEditor::resized()
 
         // Transport controls.
         auto trb = seq.removeFromTop (32).reduced (8, 4);
-        midiDrag.setBounds      (trb.removeFromRight (92));
+        midiDrag.setBounds      (trb.removeFromRight (100));
         trb.removeFromRight (6);
         optionsButton.setBounds (trb.removeFromRight (30));
         trb.removeFromRight (12);

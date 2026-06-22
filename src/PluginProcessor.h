@@ -159,6 +159,7 @@ private:
         std::atomic<float>* tune  = nullptr;  // -12 .. 12 semitones
         std::atomic<float>* mute  = nullptr;  // 0/1
         std::atomic<float>* solo  = nullptr;  // 0/1
+        std::atomic<float>* swing = nullptr;  // 0/1 — follow the global Shuffle amount
     };
     std::array<VoiceParams, (size_t) DrumKit::kNumChannels> voiceParams;
 

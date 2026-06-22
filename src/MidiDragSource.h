@@ -24,10 +24,19 @@ public:
         g.fillRoundedRectangle (r, 4.0f);
         g.setColour (juce::Colours::orange.withAlpha (0.8f));
         g.drawRoundedRectangle (r, 4.0f, 1.0f);
+        // Drag-handle "grip" dots (drawn, so they always render) + label.
+        auto content  = getLocalBounds().reduced (7, 0);
+        auto gripArea = content.removeFromLeft (7);
+        const float gx = (float) gripArea.getX();
+        const float gy = (float) gripArea.getCentreY();
+        g.setColour (juce::Colours::white.withAlpha (0.8f));
+        for (int row = 0; row < 3; ++row)
+            for (int col = 0; col < 2; ++col)
+                g.fillEllipse (gx + (float) col * 4.0f, gy - 6.0f + (float) row * 5.0f, 2.2f, 2.2f);
+
         g.setColour (juce::Colours::white);
-        g.setFont (juce::FontOptions (12.0f));
-        g.drawText (juce::String::fromUTF8 ("\xE2\x86\x93 drag MIDI"), getLocalBounds(),
-                    juce::Justification::centred);
+        g.setFont (juce::FontOptions (11.0f));
+        g.drawText ("Drag Pattern", content, juce::Justification::centred);
     }
 
     void mouseDrag (const juce::MouseEvent&) override
