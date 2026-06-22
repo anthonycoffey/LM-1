@@ -184,3 +184,36 @@ bool KitFactory::loadVoiceFromFile (DrumKit& kit, int voiceIndex, const juce::Fi
 
     return true;
 }
+
+//==============================================================================
+bool KitFactory::restoreVoiceToFactory (DrumKit& kit, int voiceIndex, double proceduralRate)
+{
+    if (voiceIndex < 0 || voiceIndex >= DrumKit::kNumVoices)
+        return false;
+
+    auto& vs = kit.voice (voiceIndex);
+    vs.sourceTag   = "factory";
+    vs.sourcePath  = {};
+    vs.startSample = 0;
+    vs.endSample   = -1;
+
+    bool loaded = false;
+   #if LMONE_HAS_BINARY_KIT
+    juce::AudioFormatManager fm;
+    fm.registerBasicFormats();
+    loaded = loadVoiceFromBinary (vs, voiceIndex, fm);
+   #endif
+
+    if (loaded)
+    {
+        vs.isProcedural = false;
+    }
+    else
+    {
+        vs.buffer           = makeProcedural (voiceIndex, proceduralRate);
+        vs.sourceSampleRate = proceduralRate;
+        vs.isProcedural     = true;
+    }
+
+    return true;
+}

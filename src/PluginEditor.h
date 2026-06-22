@@ -53,7 +53,6 @@ private:
     juce::ArrowButton bankPrev { "bankPrev", 0.5f, LMColours::orange };  // points left  (prev bank)
     juce::ArrowButton bankNext { "bankNext", 0.0f, LMColours::orange };  // points right (next bank)
     juce::TextButton  saveButton { "Save" };
-    int              selectedSlot = 0;
     std::unique_ptr<juce::FileChooser> presetChooser;
 
     // Transport bar.
@@ -74,7 +73,8 @@ private:
     std::unique_ptr<SliderAttachment> masterAttach, lofiAttach, tuneAttach, shuffleAttach;
 
     // Styling: wood side cheeks + orange section frames.
-    static constexpr int kCheek = 26;
+    static constexpr int kCheek = 52;       // thicker wood cheeks
+    static constexpr int kBottomLip = 12;   // wood lip / breathing room below the sequencer
     static constexpr int kLabelStrip = 14;
     juce::Image          woodImage;
     juce::Rectangle<int> rGlobals, rMixer, rSeq;

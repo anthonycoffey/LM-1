@@ -11,7 +11,18 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     padButton.onClick = [this] { processor.keyboardState.noteOn (1, midiNote, 0.9f); };
     addAndMakeVisible (padButton);
 
-    loadButton.onClick = [this] { chooseSample(); };
+    loadButton.onClick = [this]
+    {
+        if (processor.voiceHasUserSample (index))
+        {
+            processor.restoreVoiceToFactory (index);   // undo a user load -> factory sound
+            updateSourceLabel();
+        }
+        else
+        {
+            chooseSample();
+        }
+    };
     addAndMakeVisible (loadButton);
 
     sourceLabel.setJustificationType (juce::Justification::centred);
@@ -27,7 +38,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     auto setupKnob = [this] (juce::Slider& s)
     {
         s.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 56, 13);
+        s.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);   // knob pointer is the cue
         s.setDoubleClickReturnValue (true, 0.0); // center detent / reset
         addAndMakeVisible (s);
     };
@@ -69,6 +80,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
 void VoiceStripComponent::updateSourceLabel()
 {
     sourceLabel.setText (processor.getVoiceSourceLabel (index), juce::dontSendNotification);
+    loadButton.setLoaded (processor.voiceHasUserSample (index));   // folder vs. remove icon
 }
 
 void VoiceStripComponent::chooseSample()
@@ -109,29 +121,27 @@ void VoiceStripComponent::resized()
     sourceLabel.setBounds (r.removeFromTop (13));
     r.removeFromTop (4);
 
-    // "VOL" caption sits above the level fader (its value box is below it).
-    levelCaption.setBounds (r.removeFromTop (11));
-
-    // Bottom-up: mute/solo row, then tune knob, then pan knob.
+    // Bottom-up: mute/solo row, then swing / tune / pan knobs (label below each).
     auto bottom = r.removeFromBottom (20);
     muteButton.setBounds (bottom.removeFromLeft (bottom.getWidth() / 2).reduced (1));
     soloButton.setBounds (bottom.reduced (1));
     r.removeFromBottom (4);
 
-    auto swingArea = r.removeFromBottom (54);
+    auto swingArea = r.removeFromBottom (58);
     swingCaption.setBounds (swingArea.removeFromBottom (11));
     swingSlider.setBounds (swingArea);
 
-    auto tuneArea = r.removeFromBottom (54);
+    auto tuneArea = r.removeFromBottom (58);
     tuneCaption.setBounds (tuneArea.removeFromBottom (11));
     tuneSlider.setBounds (tuneArea);
 
-    auto panArea = r.removeFromBottom (54);
+    auto panArea = r.removeFromBottom (58);
     panCaption.setBounds (panArea.removeFromBottom (11));
     panSlider.setBounds (panArea);
 
     r.removeFromBottom (4);
 
-    // Remaining space is the level fader.
+    // "VOL" caption sits below the fader, matching the label-below-control pattern.
+    levelCaption.setBounds (r.removeFromBottom (11));
     levelSlider.setBounds (r);
 }
