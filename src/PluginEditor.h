@@ -36,6 +36,7 @@ private:
     void savePresetDialog();
     void loadPresetDialog();
     void refreshBankUI();         // reflect the current bank + slot states
+    void gotoBank (int newBank);  // change bank + auto-load the selected slot's groove
 
     LMOneAudioProcessor& processor;
     LMOneLookAndFeel     lookAndFeel;

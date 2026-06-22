@@ -91,10 +91,26 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     };
     addAndMakeVisible (stepsBox);
 
+    clearButton.setTooltip (juce::String::fromUTF8 (
+        "Clears the grid only \xE2\x80\x94 bank grooves are safe; click a slot to reload one"));
     clearButton.onClick = [this]
     {
-        processor.clearPattern();
-        grid.reloadFromProcessor();
+        juce::NativeMessageBox::showOkCancelBox (
+            juce::MessageBoxIconType::QuestionIcon,
+            "Clear grid?",
+            juce::String::fromUTF8 ("Clears the current sequence. Your saved grooves are "
+                                    "safe \xE2\x80\x94 click a slot to reload one."),
+            this,
+            juce::ModalCallbackFunction::create ([this] (int result)
+            {
+                if (result == 0)        // 0 = Cancel
+                    return;
+
+                processor.clearPattern();
+                selectedSlot = -1;      // nothing loaded now — click a slot to reload
+                grid.reloadFromProcessor();
+                refreshBankUI();
+            }));
     };
     addAndMakeVisible (clearButton);
 
@@ -137,8 +153,8 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
 
     bankPrev.setButtonText (juce::String::fromUTF8 ("\xE2\x97\x80")); // left triangle
     bankNext.setButtonText (juce::String::fromUTF8 ("\xE2\x96\xB6")); // right triangle
-    bankPrev.onClick = [this] { processor.setCurrentBank (processor.getCurrentBank() - 1); refreshBankUI(); };
-    bankNext.onClick = [this] { processor.setCurrentBank (processor.getCurrentBank() + 1); refreshBankUI(); };
+    bankPrev.onClick = [this] { gotoBank (processor.getCurrentBank() - 1); };
+    bankNext.onClick = [this] { gotoBank (processor.getCurrentBank() + 1); };
     addAndMakeVisible (bankPrev);
     addAndMakeVisible (bankNext);
 
@@ -237,6 +253,26 @@ void LMOneAudioProcessorEditor::refreshBankUI()
         slotButtons[i]->setTooltip (filled ? processor.slotName (i) : juce::String ("(empty)"));
     }
     saveButton.setEnabled (! processor.currentBankIsFactory());
+}
+
+void LMOneAudioProcessorEditor::gotoBank (int newBank)
+{
+    processor.setCurrentBank (newBank);
+
+    // Auto-load the groove under the selected slot so flipping banks previews
+    // them (the jukebox feel). After a Clear nothing is selected, so fall back
+    // to the first slot. An empty slot loads nothing and leaves the grid alone,
+    // which keeps an unsaved beat intact when you browse to a blank user bank.
+    if (selectedSlot < 0)
+        selectedSlot = 0;
+
+    if (processor.slotFilled (selectedSlot))
+    {
+        processor.loadSlot (selectedSlot);
+        grid.reloadFromProcessor();
+    }
+
+    refreshBankUI();
 }
 
 void LMOneAudioProcessorEditor::savePresetDialog()
