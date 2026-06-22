@@ -24,8 +24,8 @@ public:
     LMOneLookAndFeel()
     {
         using namespace juce;
-        setColour (Slider::textBoxTextColourId,       Colours::white);
-        setColour (Slider::textBoxBackgroundColourId, Colour (0xff0c0c0c));
+        setColour (Slider::textBoxTextColourId,       Colour (0xffff3322));   // LED red readout
+        setColour (Slider::textBoxBackgroundColourId, Colour (0xff160a08));   // dark glass
         setColour (Slider::textBoxOutlineColourId,    Colours::transparentBlack);
         setColour (Label::textColourId,               LMColours::orange.brighter (0.15f));
         setColour (TextButton::buttonColourId,        Colour (0xff262422));

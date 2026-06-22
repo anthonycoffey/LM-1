@@ -101,6 +101,9 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     stepsBox.addItem ("8",  8);
     stepsBox.addItem ("16", 16);
     stepsBox.addItem ("32", 32);
+    stepsBox.setColour (juce::ComboBox::textColourId,       juce::Colour (0xffff3322));  // LED red
+    stepsBox.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xff160a08));  // dark glass
+    stepsBox.setColour (juce::ComboBox::outlineColourId,    juce::Colours::black);
     stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
     stepsBox.onChange = [this]
     {
