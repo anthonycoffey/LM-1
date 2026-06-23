@@ -57,6 +57,9 @@ public:
     void setText (const juce::String& t)   { if (t != text) { text = t; repaint(); } }
     void setFontHeight (float h)           { fontHeight = h; }
 
+    std::function<void()> onDoubleClick;
+    void mouseDoubleClick (const juce::MouseEvent&) override { if (onDoubleClick) onDoubleClick(); }
+
     void paint (juce::Graphics& g) override
     {
         auto r = getLocalBounds().toFloat();
@@ -73,6 +76,32 @@ public:
 private:
     juce::String text;
     float        fontHeight = 9.0f;
+};
+
+//==============================================================================
+// XButton — an orange "X" in an orange-bordered square. Hover/press inverts it
+// (orange fill, dark X). Used for Clear, to drop the white "Clear" text.
+//==============================================================================
+class XButton : public juce::Button
+{
+public:
+    XButton() : juce::Button ("clear") {}
+
+    void paintButton (juce::Graphics& g, bool over, bool down) override
+    {
+        // Flat background, matching the mute/solo buttons (subtle hover/press).
+        getLookAndFeel().drawButtonBackground (g, *this,
+            findColour (juce::TextButton::buttonColourId), over, down);
+
+        // A small orange X.
+        auto r = getLocalBounds().toFloat();
+        const float s = juce::jmin (r.getWidth(), r.getHeight()) * 0.42f;
+        juce::Rectangle<float> x (0.0f, 0.0f, s, s);
+        x.setCentre (r.getCentre());
+        g.setColour (juce::Colour (0xfffc5824));
+        g.drawLine (x.getX(), x.getY(),      x.getRight(), x.getBottom(), 1.7f);
+        g.drawLine (x.getX(), x.getBottom(), x.getRight(), x.getY(),      1.7f);
+    }
 };
 
 //==============================================================================

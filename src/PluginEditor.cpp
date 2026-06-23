@@ -59,6 +59,12 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     addAndMakeVisible (shufPrev);
     addAndMakeVisible (shufNext);
     shuffleLed.setFontHeight (11.0f);
+    shuffleLed.onDoubleClick = [this]
+    {
+        if (auto* p = processor.apvts.getParameter ("shuffle"))
+            p->setValueNotifyingHost (0.0f);   // index 0 = "Straight"
+        refreshShuffleLeds();
+    };
     addAndMakeVisible (shuffleLed);
 
     masterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "masterGain", masterSlider);
@@ -203,13 +209,9 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
         b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
         b->onClick = [this, i]
         {
-            processor.setCurrentSlot (i);
-            if (processor.slotFilled (i))
-            {
-                processor.loadSlot (i);
-                grid.reloadFromProcessor();
-                stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
-            }
+            processor.loadSlot (i);   // loads the preset, or empties the grid for an empty slot
+            grid.reloadFromProcessor();
+            stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
             refreshBankUI();
         };
         addAndMakeVisible (b);
@@ -228,7 +230,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 820 + kBottomLip + 12);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 850 + kBottomLip + 12);
 }
 
 LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
@@ -306,21 +308,15 @@ void LMOneAudioProcessorEditor::gotoBank (int newBank)
 {
     processor.setCurrentBank (newBank);
 
-    // Auto-load the groove under the selected slot so flipping banks previews
-    // them (the jukebox feel). After a Clear nothing is selected, so fall back
-    // to the first slot. An empty slot loads nothing and leaves the grid alone,
-    // which keeps an unsaved beat intact when you browse to a blank user bank.
+    // Show the same slot position in the new bank: a filled preset loads, an
+    // empty (user) preset empties the grid. After a Clear, fall back to slot 1.
     int slot = processor.getCurrentSlot();
     if (slot < 0)
         slot = 0;
-    processor.setCurrentSlot (slot);
 
-    if (processor.slotFilled (slot))
-    {
-        processor.loadSlot (slot);
-        grid.reloadFromProcessor();
-        stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
-    }
+    processor.loadSlot (slot);   // reflect this bank's slot (empties the grid for an empty preset)
+    grid.reloadFromProcessor();
+    stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
 
     refreshBankUI();
 }
@@ -461,19 +457,19 @@ void LMOneAudioProcessorEditor::resized()
         place (lofiSlider,    lofiLabel);
         place (tuneSlider,    tuneLabel);
         {
-            // Shuffle cell: label on top, LED readout, then < > steppers beneath it.
+            // Shuffle cell: label, < > steppers, then the LED value below them —
+            // matching the value-below-control layout of the other global fields.
             auto cell = g.removeFromLeft (kW);
             shuffleLabel.setBounds (cell.removeFromTop (16));
-            auto arrowsRow = cell.removeFromBottom (20);
-            shuffleLed.setBounds (cell.reduced (8, 2));
-            auto arrows = arrowsRow.withSizeKeepingCentre (54, juce::jmin (arrowsRow.getHeight(), 18));
+            shuffleLed.setBounds (cell.removeFromBottom (18).reduced (8, 1));
+            auto arrows = cell.withSizeKeepingCentre (54, juce::jmin (cell.getHeight(), 22));
             shufPrev.setBounds (arrows.removeFromLeft (27));
             shufNext.setBounds (arrows);
         }
     }
 
     // SEQUENCER — transport controls + pattern slots + step grid, all together.
-    rSeq = area.removeFromBottom (kLabelStrip + 44 + 28 + 226);
+    rSeq = area.removeFromBottom (kLabelStrip + 44 + 28 + 256);   // grid +30 for the LED/number header
     {
         auto seq = rSeq;
         seq.removeFromTop (kLabelStrip);            // room for the section label
@@ -493,7 +489,7 @@ void LMOneAudioProcessorEditor::resized()
         stepsLabel.setBounds (trb.removeFromLeft (46));
         stepsBox.setBounds   (trb.removeFromLeft (72));
         trb.removeFromLeft (8);
-        clearButton.setBounds (trb.removeFromLeft (52));
+        clearButton.setBounds (trb.removeFromLeft (28).withSizeKeepingCentre (24, 24));   // small flat X
         trb.removeFromLeft (12);
         tempoLabel.setBounds (trb.removeFromLeft (46));
         tempoLed.setBounds (trb.removeFromRight (54).reduced (0, 2));
@@ -507,7 +503,7 @@ void LMOneAudioProcessorEditor::resized()
         bankLed.setBounds   (pr.removeFromLeft (42).reduced (0, 1));
         bankNext.setBounds  (pr.removeFromLeft (22));
         pr.removeFromLeft (10);
-        saveButton.setBounds (pr.removeFromRight (52));
+        saveButton.setBounds (pr.removeFromRight (88));
         pr.removeFromRight (10);
         const int nb = slotButtons.size();
         if (nb > 0)

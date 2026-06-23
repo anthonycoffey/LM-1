@@ -112,8 +112,8 @@ public:
     // Preset library: 100 banks x 8 slots. Banks 1-5 are factory grooves; banks
     // 6-100 are user-saveable (persisted to disk). The editor works with the
     // "current bank"; slots load into / save from the working sequence.
-    static constexpr int kNumBanks        = 100;
-    static constexpr int kBankSlots       = 8;
+    static constexpr int kNumBanks        = 10;   // banks 1-5 factory, 6-10 user
+    static constexpr int kBankSlots       = 10;
     static constexpr int kNumFactoryBanks = 5;
     int  getCurrentBank() const noexcept { return currentBank; }
     void setCurrentBank (int bank);

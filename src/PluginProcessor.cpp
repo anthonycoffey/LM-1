@@ -274,8 +274,8 @@ void LMOneAudioProcessor::clearPattern()
     workingPattern.clear();
     workingPattern.numSteps = keepSteps;
     workingPattern.numLanes = DrumKit::kNumVoices;
-    currentSlot = -1;                 // a cleared grid no longer matches any slot
     publishPattern (workingPattern);
+    // Keep the current slot selected so Clear + Save wipes that preset.
 }
 
 //==============================================================================
@@ -293,16 +293,27 @@ void LMOneAudioProcessor::loadSlot (int slot)
 {
     if (slot < 0 || slot >= kBankSlots) return;
 
-    const auto& s = library[(size_t) currentBank][(size_t) slot];
-    if (! s.filled) return;
-
     currentSlot = slot;
-    workingPattern = s.pattern;
-    workingPattern.numLanes = DrumKit::kNumVoices;
-    publishPattern (workingPattern);
+    const auto& s = library[(size_t) currentBank][(size_t) slot];
 
-    if (auto* p = apvts.getParameter ("seqTempo"))
-        p->setValueNotifyingHost (p->convertTo0to1 ((float) s.tempo));
+    if (s.filled)
+    {
+        workingPattern = s.pattern;
+        workingPattern.numLanes = DrumKit::kNumVoices;
+        publishPattern (workingPattern);
+
+        if (auto* p = apvts.getParameter ("seqTempo"))
+            p->setValueNotifyingHost (p->convertTo0to1 ((float) s.tempo));
+    }
+    else
+    {
+        // Empty (user) preset -> empty grid, keeping the current length.
+        const int keepSteps = workingPattern.numSteps;
+        workingPattern.clear();
+        workingPattern.numSteps = keepSteps;
+        workingPattern.numLanes = DrumKit::kNumVoices;
+        publishPattern (workingPattern);
+    }
 }
 
 void LMOneAudioProcessor::saveSlot (int slot)
@@ -311,12 +322,21 @@ void LMOneAudioProcessor::saveSlot (int slot)
         return;   // factory banks are read-only
 
     currentSlot = slot;
+
+    // Saving an empty grid wipes the slot (delete); otherwise store the pattern.
+    bool empty = true;
+    for (int lane = 0; lane < Pattern::kMaxLanes && empty; ++lane)
+        for (int step = 0; step < Pattern::kMaxSteps; ++step)
+            if (workingPattern.vel[(size_t) lane][(size_t) step] > 0) { empty = false; break; }
+
     auto& s = library[(size_t) currentBank][(size_t) slot];
     s.pattern = workingPattern;
     s.tempo   = juce::roundToInt (getSeqTempo());
     s.factory = false;
-    s.filled  = true;
-    if (s.name.isEmpty())
+    s.filled  = ! empty;
+    if (empty)
+        s.name = {};
+    else if (s.name.isEmpty())
         s.name = "User " + juce::String (currentBank + 1) + "." + juce::String (slot + 1);
 
     saveUserLibrary();
@@ -467,24 +487,8 @@ void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             events[(size_t) numEvents++] = { v, juce::jlimit (0, juce::jmax (0, n - 1), off), vel };
     };
 
-    // Live MIDI note-ons, at their sample positions. When record is armed and the
-    // sequencer is rolling, also write the hit onto the playing step (overdub).
-    const int recStep = recordArmed.load() ? sequencer.getCurrentStepForUi() : -1;
-    for (const auto metadata : midiMessages)
-    {
-        const auto msg = metadata.getMessage();
-        if (msg.isNoteOn())
-            for (int p = 0; p < (int) pads.size(); ++p)
-                if (pads[(size_t) p].midiNote == msg.getNoteNumber())
-                {
-                    addEvent (p, metadata.samplePosition, msg.getFloatVelocity());
-                    if (recStep >= 0)
-                        pushRecordEvent (p, recStep,
-                            (juce::uint8) juce::jlimit (1, 127, juce::roundToInt (msg.getFloatVelocity() * 127.0f)));
-                }
-    }
-
-    // Sequencer steps.
+    // Sequencer steps (run first so live-record can quantize against this block's clock).
+    const Pattern pat = patternState.slots[(size_t) patternState.live.load (std::memory_order_acquire)];
     {
         Sequencer::Transport tr;
         tr.sampleRate      = currentSampleRate;
@@ -518,8 +522,28 @@ void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
         tr.laneSwing = laneSwing;
 
-        const Pattern pat = patternState.slots[(size_t) patternState.live.load (std::memory_order_acquire)];
         sequencer.process (pat, tr, n, [&] (int lane, int off, float vel) { addEvent (lane, off, vel); });
+    }
+
+    // Live MIDI/pad note-ons, at their sample positions. When record is armed and
+    // the sequencer is rolling, write each hit onto the nearest step (overdub).
+    const bool recording = recordArmed.load();
+    for (const auto metadata : midiMessages)
+    {
+        const auto msg = metadata.getMessage();
+        if (msg.isNoteOn())
+            for (int p = 0; p < (int) pads.size(); ++p)
+                if (pads[(size_t) p].midiNote == msg.getNoteNumber())
+                {
+                    addEvent (p, metadata.samplePosition, msg.getFloatVelocity());
+                    if (recording)
+                    {
+                        const int step = sequencer.quantizeToNearestStep (metadata.samplePosition, pat.numSteps);
+                        if (step >= 0)
+                            pushRecordEvent (p, step,
+                                (juce::uint8) juce::jlimit (1, 127, juce::roundToInt (msg.getFloatVelocity() * 127.0f)));
+                    }
+                }
     }
 
     // Sort events by sample offset (insertion sort — events arrive nearly sorted).

@@ -1,4 +1,5 @@
 #include "StepGridComponent.h"
+#include "LMOneLookAndFeel.h"
 
 namespace
 {
@@ -34,13 +35,13 @@ StepGridComponent::Cell StepGridComponent::cellAt (juce::Point<int> pos) const
     const int numSteps = juce::jmax (1, pattern.numSteps);
     const int numLanes = juce::jmax (1, (int) processor.getPads().size());
 
-    if (pos.x < kLabelW || pos.x >= getWidth() || pos.y < 0 || pos.y >= getHeight())
+    if (pos.x < kLabelW || pos.x >= getWidth() || pos.y < kHeaderH || pos.y >= getHeight())
         return {};
 
     const float cellW = (float) (getWidth() - kLabelW) / (float) numSteps;
-    const int   laneH = juce::jmax (1, getHeight() / numLanes);
+    const int   laneH = juce::jmax (1, (getHeight() - kHeaderH) / numLanes);
 
-    const int row = juce::jlimit (0, numLanes - 1, pos.y / laneH);
+    const int row = juce::jlimit (0, numLanes - 1, (pos.y - kHeaderH) / laneH);
     return { laneForRow (row),
              juce::jlimit (0, numSteps - 1, (int) ((float) (pos.x - kLabelW) / cellW)) };
 }
@@ -104,19 +105,41 @@ void StepGridComponent::paint (juce::Graphics& g)
     const int numLanes = juce::jmax (1, (int) processor.getPads().size());
     const auto& pads   = processor.getPads();
 
-    const int   laneH = getHeight() / numLanes;
-    const float cellW = (float) (getWidth() - kLabelW) / (float) numSteps;
+    const int   gridTop = kHeaderH;
+    const int   laneH   = juce::jmax (1, (getHeight() - gridTop) / numLanes);
+    const float cellW   = (float) (getWidth() - kLabelW) / (float) numSteps;
 
-    g.setFont (juce::FontOptions (11.0f));
+    // --- Header: a row of LED lamps + step numbers above each column ---------
+    const juce::Colour led (0xffff3322);
+    for (int step = 0; step < numSteps; ++step)
+    {
+        const float cx = (float) kLabelW + ((float) step + 0.5f) * cellW;
+        const bool  on = (step == playingStep);
 
+        juce::Rectangle<float> dot (0.0f, 0.0f, 6.0f, 6.0f);
+        dot.setCentre (cx, 8.0f);
+        if (on) { g.setColour (led.withAlpha (0.30f)); g.fillEllipse (dot.expanded (2.5f)); }  // glow
+        g.setColour (on ? led : led.withAlpha (0.14f));
+        g.fillEllipse (dot);
+
+        const bool beat = (step % 4 == 0);
+        g.setColour (beat ? LMColours::orange.withAlpha (0.9f) : juce::Colours::grey.withAlpha (0.6f));
+        g.setFont (juce::FontOptions (9.0f, beat ? juce::Font::bold : juce::Font::plain));
+        g.drawText (juce::String (step + 1),
+                    juce::Rectangle<float> (cx - cellW * 0.5f, 15.0f, cellW, 12.0f),
+                    juce::Justification::centred);
+    }
+
+    // --- Lanes ---------------------------------------------------------------
     for (int row = 0; row < numLanes; ++row)
     {
         const int lane = laneForRow (row);
-        const int y = row * laneH;
+        const int y = gridTop + row * laneH;
 
         if (lane < (int) pads.size())
         {
-            g.setColour (juce::Colours::white.withAlpha (0.72f));
+            g.setColour (LMColours::orange.withAlpha (0.9f));
+            g.setFont (juce::FontOptions (11.0f));
             g.drawText (pads[(size_t) lane].name, 6, y, kLabelW - 10, laneH,
                         juce::Justification::centredLeft);
         }
@@ -129,7 +152,7 @@ void StepGridComponent::paint (juce::Graphics& g)
 
             juce::Colour bg = (step % 4 == 0) ? juce::Colour (0xff26262c) : juce::Colour (0xff1d1d22);
             if (step == playingStep)
-                bg = bg.brighter (0.30f);
+                bg = bg.brighter (0.16f);   // subtle column tint; the LED above is the main cue
             g.setColour (bg);
             g.fillRect (inner);
 
@@ -143,15 +166,6 @@ void StepGridComponent::paint (juce::Graphics& g)
         }
     }
 
-    // Playhead column outline.
-    if (playingStep >= 0 && playingStep < numSteps)
-    {
-        const int x  = kLabelW + (int) std::round ((float) playingStep * cellW);
-        const int x2 = kLabelW + (int) std::round ((float) (playingStep + 1) * cellW);
-        g.setColour (juce::Colours::white.withAlpha (0.5f));
-        g.drawRect (juce::Rectangle<int> (x, 0, juce::jmax (1, x2 - x), getHeight()), 1);
-    }
-
     g.setColour (juce::Colours::black);
-    g.drawVerticalLine (kLabelW, 0.0f, (float) getHeight());
+    g.drawVerticalLine (kLabelW, (float) gridTop, (float) getHeight());
 }
