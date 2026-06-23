@@ -274,8 +274,8 @@ void LMOneAudioProcessor::clearPattern()
     workingPattern.clear();
     workingPattern.numSteps = keepSteps;
     workingPattern.numLanes = DrumKit::kNumVoices;
-    currentSlot = -1;                 // a cleared grid no longer matches any slot
     publishPattern (workingPattern);
+    // Keep the current slot selected so Clear + Save wipes that preset.
 }
 
 //==============================================================================
@@ -322,12 +322,21 @@ void LMOneAudioProcessor::saveSlot (int slot)
         return;   // factory banks are read-only
 
     currentSlot = slot;
+
+    // Saving an empty grid wipes the slot (delete); otherwise store the pattern.
+    bool empty = true;
+    for (int lane = 0; lane < Pattern::kMaxLanes && empty; ++lane)
+        for (int step = 0; step < Pattern::kMaxSteps; ++step)
+            if (workingPattern.vel[(size_t) lane][(size_t) step] > 0) { empty = false; break; }
+
     auto& s = library[(size_t) currentBank][(size_t) slot];
     s.pattern = workingPattern;
     s.tempo   = juce::roundToInt (getSeqTempo());
     s.factory = false;
-    s.filled  = true;
-    if (s.name.isEmpty())
+    s.filled  = ! empty;
+    if (empty)
+        s.name = {};
+    else if (s.name.isEmpty())
         s.name = "User " + juce::String (currentBank + 1) + "." + juce::String (slot + 1);
 
     saveUserLibrary();

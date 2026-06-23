@@ -86,23 +86,18 @@ public:
 
     void paintButton (juce::Graphics& g, bool over, bool down) override
     {
-        const juce::Colour orange (0xfffc5824);
-        const bool fill = over || down;
+        // Flat background, matching the mute/solo buttons (subtle hover/press).
+        getLookAndFeel().drawButtonBackground (g, *this,
+            findColour (juce::TextButton::buttonColourId), over, down);
 
-        auto b = getLocalBounds().toFloat();
-        const float s = juce::jmin (b.getWidth(), b.getHeight());
-        juce::Rectangle<float> sq (0.0f, 0.0f, s, s);
-        sq.setCentre (b.getCentre());
-        sq = sq.reduced (1.5f);
-
-        if (fill) { g.setColour (down ? orange.darker (0.15f) : orange); g.fillRoundedRectangle (sq, 3.0f); }
-        g.setColour (orange);
-        g.drawRoundedRectangle (sq, 3.0f, 1.4f);
-
-        auto x = sq.reduced (sq.getWidth() * 0.30f);
-        g.setColour (fill ? juce::Colour (0xff141312) : orange);   // inverted X when filled
-        g.drawLine (x.getX(), x.getY(),      x.getRight(), x.getBottom(), 1.8f);
-        g.drawLine (x.getX(), x.getBottom(), x.getRight(), x.getY(),      1.8f);
+        // A small orange X.
+        auto r = getLocalBounds().toFloat();
+        const float s = juce::jmin (r.getWidth(), r.getHeight()) * 0.42f;
+        juce::Rectangle<float> x (0.0f, 0.0f, s, s);
+        x.setCentre (r.getCentre());
+        g.setColour (juce::Colour (0xfffc5824));
+        g.drawLine (x.getX(), x.getY(),      x.getRight(), x.getBottom(), 1.7f);
+        g.drawLine (x.getX(), x.getBottom(), x.getRight(), x.getY(),      1.7f);
     }
 };
 

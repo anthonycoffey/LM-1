@@ -483,7 +483,7 @@ void LMOneAudioProcessorEditor::resized()
         stepsLabel.setBounds (trb.removeFromLeft (46));
         stepsBox.setBounds   (trb.removeFromLeft (72));
         trb.removeFromLeft (8);
-        clearButton.setBounds (trb.removeFromLeft (34));   // square X button
+        clearButton.setBounds (trb.removeFromLeft (28));   // small flat X button
         trb.removeFromLeft (12);
         tempoLabel.setBounds (trb.removeFromLeft (46));
         tempoLed.setBounds (trb.removeFromRight (54).reduced (0, 2));
