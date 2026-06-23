@@ -228,7 +228,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 820 + kBottomLip + 12);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 850 + kBottomLip + 12);
 }
 
 LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
@@ -473,7 +473,7 @@ void LMOneAudioProcessorEditor::resized()
     }
 
     // SEQUENCER — transport controls + pattern slots + step grid, all together.
-    rSeq = area.removeFromBottom (kLabelStrip + 44 + 28 + 226);
+    rSeq = area.removeFromBottom (kLabelStrip + 44 + 28 + 256);   // grid +30 for the LED/number header
     {
         auto seq = rSeq;
         seq.removeFromTop (kLabelStrip);            // room for the section label

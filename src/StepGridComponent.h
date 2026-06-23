@@ -42,6 +42,7 @@ private:
     bool        painting    = false;
 
     static constexpr int kLabelW     = 78;
+    static constexpr int kHeaderH    = 28;   // top strip: per-step LEDs + step numbers
     static constexpr int kDefaultVel = 100;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StepGridComponent)

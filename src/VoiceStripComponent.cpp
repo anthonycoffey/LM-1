@@ -64,7 +64,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     setupCaption (levelCaption, "VOL");
     setupCaption (panCaption,   "PAN");
     setupCaption (tuneCaption,  "TUNE");
-    setupCaption (swingCaption, "SHUF");
+    setupCaption (swingCaption, "SHUFFLE");
 
     muteButton.setClickingTogglesState (true);
     soloButton.setClickingTogglesState (true);
