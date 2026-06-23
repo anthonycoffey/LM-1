@@ -55,7 +55,7 @@ private:
     juce::Label      bankLabel;
     StepArrow bankPrev { true,  LMColours::orange };   // previous bank
     StepArrow bankNext { false, LMColours::orange };   // next bank
-    juce::TextButton  saveButton { "Save" };
+    juce::TextButton  saveButton { "Save Pattern" };
     std::unique_ptr<juce::FileChooser> presetChooser;
 
     // Transport bar.

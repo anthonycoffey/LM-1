@@ -55,6 +55,27 @@ private:
 };
 
 //==============================================================================
+// The audition pad at the top of each strip: plays the voice on click and shows
+// the instrument name styled like the section labels (orange, bold, fitted).
+//==============================================================================
+class PadButton : public juce::Button
+{
+public:
+    PadButton() : juce::Button ("pad") {}
+
+    void paintButton (juce::Graphics& g, bool over, bool down) override
+    {
+        getLookAndFeel().drawButtonBackground (g, *this,
+            findColour (juce::TextButton::buttonColourId), over, down);
+
+        g.setColour (juce::Colour (0xfffc5824));   // orange, like the section labels
+        g.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+        g.drawFittedText (getButtonText(), getLocalBounds().reduced (3),
+                          juce::Justification::centred, 2);
+    }
+};
+
+//==============================================================================
 // One vertical mixer strip for a single voice: an audition pad, a sample-slot
 // button, the loaded-sample name, a level fader, pan + tune knobs, mute/solo.
 // All controls are attached to the processor's APVTS parameters.
@@ -85,7 +106,7 @@ private:
     int index = 0;
     int midiNote = 0;
 
-    juce::TextButton padButton;
+    PadButton        padButton;
     SampleSlotButton loadButton;
     juce::Label      sourceLabel;
     juce::Slider     levelSlider, panSlider, tuneSlider;

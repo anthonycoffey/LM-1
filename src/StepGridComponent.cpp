@@ -138,7 +138,7 @@ void StepGridComponent::paint (juce::Graphics& g)
 
         if (lane < (int) pads.size())
         {
-            g.setColour (juce::Colours::white.withAlpha (0.72f));
+            g.setColour (LMColours::orange.withAlpha (0.9f));
             g.setFont (juce::FontOptions (11.0f));
             g.drawText (pads[(size_t) lane].name, 6, y, kLabelW - 10, laneH,
                         juce::Justification::centredLeft);

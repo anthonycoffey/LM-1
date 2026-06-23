@@ -59,6 +59,12 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     addAndMakeVisible (shufPrev);
     addAndMakeVisible (shufNext);
     shuffleLed.setFontHeight (11.0f);
+    shuffleLed.onDoubleClick = [this]
+    {
+        if (auto* p = processor.apvts.getParameter ("shuffle"))
+            p->setValueNotifyingHost (0.0f);   // index 0 = "Straight"
+        refreshShuffleLeds();
+    };
     addAndMakeVisible (shuffleLed);
 
     masterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "masterGain", masterSlider);
@@ -497,7 +503,7 @@ void LMOneAudioProcessorEditor::resized()
         bankLed.setBounds   (pr.removeFromLeft (42).reduced (0, 1));
         bankNext.setBounds  (pr.removeFromLeft (22));
         pr.removeFromLeft (10);
-        saveButton.setBounds (pr.removeFromRight (52));
+        saveButton.setBounds (pr.removeFromRight (88));
         pr.removeFromRight (10);
         const int nb = slotButtons.size();
         if (nb > 0)

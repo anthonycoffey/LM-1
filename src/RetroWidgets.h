@@ -57,6 +57,9 @@ public:
     void setText (const juce::String& t)   { if (t != text) { text = t; repaint(); } }
     void setFontHeight (float h)           { fontHeight = h; }
 
+    std::function<void()> onDoubleClick;
+    void mouseDoubleClick (const juce::MouseEvent&) override { if (onDoubleClick) onDoubleClick(); }
+
     void paint (juce::Graphics& g) override
     {
         auto r = getLocalBounds().toFloat();

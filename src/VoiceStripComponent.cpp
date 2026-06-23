@@ -51,6 +51,12 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     addAndMakeVisible (shufPrev);
     addAndMakeVisible (shufNext);
     shufLed.setFontHeight (9.0f);
+    shufLed.onDoubleClick = [this]
+    {
+        if (auto* p = processor.apvts.getParameter ("v" + juce::String (index) + "_swing"))
+            p->setValueNotifyingHost (0.0f);   // index 0 = "Follow"
+        refreshShuffle();
+    };
     addAndMakeVisible (shufLed);
 
     auto setupCaption = [this] (juce::Label& l, const juce::String& t)
@@ -150,10 +156,11 @@ void VoiceStripComponent::resized()
     soloButton.setBounds (bottom.reduced (1));
     r.removeFromBottom (4);
 
-    // Shuffle: SHUF label on top, LED readout, then < > arrows beneath it.
-    auto shufArea = r.removeFromBottom (42);
+    // Shuffle: SHUFFLE label, LED readout, a small gap, then < > arrows beneath.
+    auto shufArea = r.removeFromBottom (46);
     swingCaption.setBounds (shufArea.removeFromTop (11));
     auto shufArrows = shufArea.removeFromBottom (15);
+    shufArea.removeFromBottom (4);   // margin above the arrows
     shufLed.setBounds (shufArea.reduced (2, 0));
     {
         auto arrows = shufArrows.withSizeKeepingCentre (44, juce::jmin (shufArrows.getHeight(), 14));
