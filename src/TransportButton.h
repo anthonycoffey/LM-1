@@ -38,18 +38,15 @@ public:
         g.setColour (juce::Colours::black.withAlpha (0.55f));
         g.drawEllipse (dot, 0.8f);
 
-        // Rectangular body (subtle bevel — vintage).
+        // Rectangular body — flat, vintage (no gloss).
         auto body = b.reduced (1).toFloat();
         auto base = juce::Colour (0xff2c2926);
-        if (down)      base = base.darker (0.25f);
-        else if (over) base = base.brighter (0.10f);
-        g.setGradientFill (juce::ColourGradient (base.brighter (0.18f), body.getX(), body.getY(),
-                                                 base.darker (0.20f),    body.getX(), body.getBottom(), false));
+        if (down)      base = base.darker (0.22f);
+        else if (over) base = base.brighter (0.08f);
+        g.setColour (base);
         g.fillRect (body);
         g.setColour (juce::Colours::black.withAlpha (0.7f));
         g.drawRect (body, 1.0f);
-        g.setColour (juce::Colours::white.withAlpha (0.07f));     // top highlight
-        g.drawLine (body.getX() + 1.0f, body.getY() + 1.0f, body.getRight() - 1.0f, body.getY() + 1.0f, 1.0f);
 
         g.setColour (juce::Colour (0xffe8e2d8));
         g.setFont (juce::FontOptions (11.5f, juce::Font::bold));

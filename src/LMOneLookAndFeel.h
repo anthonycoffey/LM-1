@@ -91,19 +91,17 @@ public:
             g.fillRoundedRectangle (cx - 3.0f, (float) y, 6.0f, (float) height, 3.0f);
             g.setColour (Colours::black);
             g.drawRoundedRectangle (cx - 3.0f, (float) y, 6.0f, (float) height, 3.0f, 1.0f);
-            // Level fill below the cap.
-            g.setColour (orange.withAlpha (0.35f));
+            // Level fill below the cap (subtle).
+            g.setColour (orange.withAlpha (0.30f));
             g.fillRoundedRectangle (cx - 2.0f, sliderPos, 4.0f, (y + height) - sliderPos, 2.0f);
-            // Metal cap.
-            const float capW = width * 0.82f, capH = 13.0f;
+            // Charcoal cap — narrower, no centre line.
+            const float capW = width * 0.6f, capH = 14.0f;
             Rectangle<float> cap (x + (width - capW) * 0.5f, sliderPos - capH * 0.5f, capW, capH);
-            g.setGradientFill (ColourGradient (LMColours::metalHi, cap.getX(), cap.getY(),
-                                               LMColours::metalLo, cap.getX(), cap.getBottom(), false));
+            g.setGradientFill (ColourGradient (Colour (0xff45423f), cap.getX(), cap.getY(),
+                                               Colour (0xff201e1d), cap.getX(), cap.getBottom(), false));
             g.fillRoundedRectangle (cap, 2.0f);
             g.setColour (Colours::black.withAlpha (0.7f));
             g.drawRoundedRectangle (cap, 2.0f, 1.0f);
-            g.setColour (orange);
-            g.fillRect (cap.getX() + 2.0f, cap.getCentreY() - 1.0f, cap.getWidth() - 4.0f, 2.0f);
         }
         else if (style == Slider::LinearHorizontal)
         {
@@ -135,15 +133,12 @@ public:
         using namespace juce;
         auto r = b.getLocalBounds().toFloat().reduced (0.5f);
         auto base = backgroundColour;
-        if (down)      base = base.darker (0.2f);
-        else if (over) base = base.brighter (0.08f);
+        if (down)      base = base.darker (0.18f);
+        else if (over) base = base.brighter (0.06f);
 
-        g.setGradientFill (ColourGradient (base.brighter (0.12f), r.getX(), r.getY(),
-                                           base.darker (0.18f),    r.getX(), r.getBottom(), false));
+        g.setColour (base);                          // flat fill — no gradient or gloss
         g.fillRoundedRectangle (r, 3.0f);
-        g.setColour (Colours::black.withAlpha (0.65f));
+        g.setColour (Colours::black.withAlpha (0.6f));
         g.drawRoundedRectangle (r, 3.0f, 1.0f);
-        g.setColour (Colours::white.withAlpha (0.06f));
-        g.drawRoundedRectangle (r.reduced (1.0f).withTrimmedBottom (r.getHeight() * 0.5f), 2.0f, 1.0f);
     }
 };

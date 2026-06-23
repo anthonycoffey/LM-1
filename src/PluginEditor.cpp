@@ -34,6 +34,11 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     auto setupSlider = [this] (juce::Slider& s, juce::Label& lab, const juce::String& text)
     {
         s.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        // Set the readout colours on the slider itself — the value box is created
+        // before the slider inherits the custom LAF, so LAF defaults wouldn't apply.
+        s.setColour (juce::Slider::textBoxTextColourId,       juce::Colour (0xffff3322)); // LED red
+        s.setColour (juce::Slider::textBoxBackgroundColourId, juce::Colour (0xff160a08)); // dark glass
+        s.setColour (juce::Slider::textBoxOutlineColourId,    juce::Colours::transparentBlack);
         s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 18);
         addAndMakeVisible (s);
         lab.setText (text, juce::dontSendNotification);
@@ -53,12 +58,22 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     shufNext.onClick = [this] { ChoiceParam::step (processor.apvts.getParameter ("shuffle"), +1); refreshShuffleLeds(); };
     addAndMakeVisible (shufPrev);
     addAndMakeVisible (shufNext);
-    shuffleLed.setFontHeight (10.0f);
+    shuffleLed.setFontHeight (11.0f);
     addAndMakeVisible (shuffleLed);
 
     masterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "masterGain", masterSlider);
     lofiAttach    = std::make_unique<SliderAttachment> (processor.apvts, "lofi",       lofiSlider);
     tuneAttach    = std::make_unique<SliderAttachment> (processor.apvts, "tune",       tuneSlider);
+
+    // Double-click any global knob to reset it to its default value.
+    auto setReset = [this] (juce::Slider& s, const juce::String& id)
+    {
+        if (auto* p = processor.apvts.getParameter (id))
+            s.setDoubleClickReturnValue (true, p->convertFrom0to1 (p->getDefaultValue()));
+    };
+    setReset (masterSlider, "masterGain");
+    setReset (lofiSlider,   "lofi");
+    setReset (tuneSlider,   "tune");
 
     // --- Transport bar -------------------------------------------------------
     // PLAY toggles the internal clock; the lamp (not the label/colour) shows state.
@@ -84,6 +99,8 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
 
     tempoLabel.setText ("TEMPO", juce::dontSendNotification);
     tempoLabel.setJustificationType (juce::Justification::centredRight);
+    tempoLabel.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+    tempoLabel.setColour (juce::Label::textColourId, LMColours::orange);
     addAndMakeVisible (tempoLabel);
 
     tempoSlider.setSliderStyle (juce::Slider::LinearHorizontal);
@@ -96,6 +113,8 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
 
     stepsLabel.setText ("STEPS", juce::dontSendNotification);
     stepsLabel.setJustificationType (juce::Justification::centredRight);
+    stepsLabel.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+    stepsLabel.setColour (juce::Label::textColourId, LMColours::orange);
     addAndMakeVisible (stepsLabel);
 
     stepsBox.addItem ("8",  8);
@@ -168,6 +187,8 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     // Preset library: Bank LED + prev/next, 8 slot buttons, Save.
     bankLabel.setText ("BANK", juce::dontSendNotification);
     bankLabel.setJustificationType (juce::Justification::centredRight);
+    bankLabel.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+    bankLabel.setColour (juce::Label::textColourId, LMColours::orange);
     addAndMakeVisible (bankLabel);
     addAndMakeVisible (bankLed);
 

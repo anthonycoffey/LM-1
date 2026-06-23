@@ -50,7 +50,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     shufNext.onClick = [this] { stepShuffle (+1); };
     addAndMakeVisible (shufPrev);
     addAndMakeVisible (shufNext);
-    shufLed.setFontHeight (8.0f);
+    shufLed.setFontHeight (9.0f);
     addAndMakeVisible (shufLed);
 
     auto setupCaption = [this] (juce::Label& l, const juce::String& t)
@@ -75,6 +75,8 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
 
     const auto id = "v" + juce::String (index);
     levelAtt = std::make_unique<SliderAttachment> (processor.apvts, id + "_level", levelSlider);
+    if (auto* p = processor.apvts.getParameter (id + "_level"))   // double-click fader -> default
+        levelSlider.setDoubleClickReturnValue (true, p->convertFrom0to1 (p->getDefaultValue()));
     panAtt   = std::make_unique<SliderAttachment> (processor.apvts, id + "_pan",   panSlider);
     tuneAtt  = std::make_unique<SliderAttachment> (processor.apvts, id + "_tune",  tuneSlider);
     muteAtt  = std::make_unique<ButtonAttachment> (processor.apvts, id + "_mute",  muteButton);
@@ -133,7 +135,7 @@ void VoiceStripComponent::resized()
 {
     auto r = getLocalBounds().reduced (4);
 
-    padButton.setBounds (r.removeFromTop (26));
+    padButton.setBounds (r.removeFromTop (50));   // squarer, pad-like
     r.removeFromTop (3);
     loadButton.setBounds (r.removeFromTop (18));
     sourceLabel.setBounds (r.removeFromTop (13));
