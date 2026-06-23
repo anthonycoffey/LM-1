@@ -5,10 +5,10 @@
 //==============================================================================
 // Procedurally synthesizes simple drum one-shots into mono AudioBuffers.
 //
-// This exists so the prototype makes sound with ZERO external asset files.
-// In Phase 1 of the roadmap you replace these with real loaded samples
-// (see DrumKit::loadFromFile in the roadmap). The synthesis here is intentionally
-// crude — it is a placeholder, not an attempt at accurate drum modelling.
+// This is the silent-fail fallback: a voice with no bundled or user-loaded WAV
+// still makes sound, so the plugin works with ZERO external asset files. The
+// synthesis here is intentionally crude — a fallback, not accurate drum modelling.
+// Drop real samples into assets/factory_kit/ or load per-voice at runtime.
 //==============================================================================
 namespace DrumSynth
 {

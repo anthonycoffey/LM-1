@@ -7,12 +7,12 @@
 #include "Sequencer.h"
 
 //==============================================================================
-// LM-1 — drum-machine instrument (foundation build).
+// LM-1 — drum-machine instrument (AU / VST3 / Standalone).
 //
-// A MIDI-playable sampler with 12 authentic LM-1 voices, per-voice sample
-// loading via a reference-counted DrumKit, a per-voice mixer, and a global
-// lo-fi "crush" stage. The internal step sequencer + step-grid UI come next
-// (see ROADMAP.md).
+// A MIDI-playable sampler with 12 authentic LM-1 voices (reference-counted
+// DrumKit), a per-voice mixer with AU multi-out, a host-synced step sequencer
+// with meter/rate time grids, a 12-bank groove library, and a global lo-fi
+// "crush" stage. See README.md for the full feature set.
 //==============================================================================
 class LMOneAudioProcessor : public juce::AudioProcessor,
                             public juce::ChangeBroadcaster

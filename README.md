@@ -1,23 +1,46 @@
 # LM-1
 
-A software drum machine modeled on the Linn LM-1, built with JUCE and targeting
-**Audio Units (AU)** so it runs natively in **Universal Audio LUNA** on macOS
-(plus VST3 and a standalone app from the same codebase).
+A software drum machine modeled on the **Linn LM-1**, built with JUCE 8 and
+targeting **Audio Units (AU)** so it runs natively in **Universal Audio LUNA** on
+macOS — plus **VST3** and a **Standalone** app from the same codebase. Universal
+binary (Apple Silicon + Intel).
 
-This repository is the **prototype scaffold**: a buildable, MIDI-playable sample
-instrument with 8 voices, a lo-fi "crush" stage, and master/tune controls. It
-makes sound out of the box using procedurally generated drum hits (no external
-sample files needed). The path from here to a full LM-1 clone is in
-[`ROADMAP.md`](ROADMAP.md).
+It's a complete **step-sequencer + sampler instrument**: 12 authentic LM-1 voices,
+a programmable step grid with real time signatures and triplet/shuffle subdivisions,
+a 100-pattern genre groove library, a per-voice mixer with per-channel multi-out,
+the signature lo-fi character, and MIDI drag-out into your DAW.
 
-## What works right now
+## Features
 
-- Builds **AU + VST3 + Standalone** from one CMake project.
-- 8 drum voices (kick, snare, closed/open hat, clap, low/mid tom, cowbell),
-  triggered by MIDI (General-MIDI drum map) or the on-screen pads.
-- Open hat is choked by closed hat.
-- Global **Tune** (resampling) and **Lo-Fi** (bit-crush + sample-rate reduction).
-- Master gain. State (parameters) saved/restored with the host project.
+- **Formats:** AU + VST3 + Standalone from one CMake/JUCE project; passes `auval`.
+- **12 LM-1 voices** — Bass, Snare, Hi-Hat (+ choked Open Hat), Cabasa, Tambourine,
+  Tom Lo/Hi, Conga Lo/Hi, Cowbell, Clave, Clap (famously **no crash cymbal**).
+  Play them from MIDI (GM drum map) or the on-screen pads.
+- **Per-voice sampling** — load your own WAV/AIFF per voice, or restore the factory
+  sound. Reference-counted kit with a lock-free audio-thread swap.
+- **Step sequencer** — host-synced + internal clock, sample-accurate. **Meter**
+  selector (2/4, 3/4, 4/4, 5/8, 6/8, 7/8, 9/8, 12/8) and **step rate** (1/4, 1/8,
+  1/16, 1/8T, 1/16T); the grid auto-sizes from meter × rate and draws beat groups.
+  Triplet rates give real shuffle / compound feel.
+- **Step grid** — click/drag to program, mouse-wheel for per-step velocity, sweeping
+  playhead, meter-aware beat dividers.
+- **Real-time record** — arm REC and play MIDI/pads to capture onto the grid
+  (nearest-step quantize).
+- **Shuffle** — global + per-track musical swing (Straight / Light / Medium /
+  Triplet / Hard, with per-track Follow).
+- **Groove library** — 12 banks × 10 slots. Banks 1–10 ship **100 genre grooves**
+  (80s Pop, 80s Dance/New Wave, Funk, R&B/Gospel, Hip-Hop, Neo-Soul, Reggae/Latin,
+  Rock, Blues, Folk); banks 11–12 are user-saveable (persisted to disk). The LED
+  reads "GENRE - pattern name".
+- **12-channel mixer** — level, pan, tune, mute, solo per voice, plus a per-channel
+  **output** selector for multi-out.
+- **Multi-out** — a stereo Main bus plus 12 direct outs, so you can process a single
+  voice (or a group) on its own track in LUNA. Several channels can share an out.
+- **MIDI export** — "Export MIDI…" to a file, **and** drag the pattern straight onto
+  the DAW timeline.
+- **Character** — global Master / Lo-Fi (bit-crush + sample-rate reduction) / Tune;
+  vintage wood-cheek faceplate, LED readouts, custom knobs/faders/buttons.
+- State (params, kit, patterns, banks) saves/restores with the host project.
 
 ## Prerequisites (macOS)
 
@@ -31,24 +54,22 @@ sample files needed). The path from here to a full LM-1 clone is in
    ```
    (Install Homebrew first from https://brew.sh if you don't have it.)
 
-JUCE itself is pulled automatically by CMake (`FetchContent`) — you don't need to
-download it separately. First configure will clone JUCE, so it needs internet and
-takes a few minutes once.
+JUCE is pulled automatically by CMake (`FetchContent`) — no separate download. The
+first configure clones JUCE, so it needs internet and takes a few minutes once.
 
 ## Build
 
-From the project folder:
-
 ```bash
-# Configure (generates an Xcode-backed build in ./build)
+# Configure (generates an Xcode-backed build in ./build). Re-run after CMakeLists
+# changes (e.g. a version bump) or adding a source file.
 cmake -B build -G Xcode
 
 # Build the plugin (Release)
 cmake --build build --config Release
 ```
 
-Because `COPY_PLUGIN_AFTER_BUILD TRUE` is set, a successful build installs the
-plugin into your user folders:
+`COPY_PLUGIN_AFTER_BUILD TRUE` installs the plugin into your user folders on a
+successful build:
 
 - AU: `~/Library/Audio/Plug-Ins/Components/LM-1.component`
 - VST3: `~/Library/Audio/Plug-Ins/VST3/LM-1.vst3`
@@ -59,36 +80,51 @@ plugin into your user folders:
 auval -v aumu Lm01 Ynme
 ```
 
-`aumu` = music device (instrument); `Lm01` and `Ynme` are the `PLUGIN_CODE` and
-`PLUGIN_MANUFACTURER_CODE` from `CMakeLists.txt`. A clean `auval` pass means the
-AU is well-formed and hosts will load it.
+`aumu` = music device (instrument); `Lm01` / `Ynme` are the `PLUGIN_CODE` and
+`PLUGIN_MANUFACTURER_CODE` from `CMakeLists.txt`. A clean pass means hosts will load it.
 
 ## Run it
 
-- **Fastest iteration:** run the **Standalone** app (built in
-  `build/LM_One_artefacts/Release/Standalone/`). Enable a MIDI input or click the
-  on-screen pads.
-- **In LUNA:** create an Instrument track and insert **LM-1** (AU instruments
-  are enabled by default in LUNA on macOS). If it doesn't appear, rescan plugins
-  in LUNA's settings.
+- **Fastest iteration:** the **Standalone** app
+  (`build/LM_One_artefacts/Release/Standalone/`). Fully quit + relaunch it to pick
+  up a rebuild (it caches).
+- **In LUNA:** add an Instrument track and insert **LM-1**. For multi-out, set
+  channels to **Out 1 / Out 2 / …** in the mixer, then add those outputs in LUNA's
+  multi-out mixer (or right-click the track → Add Multi-Output) and process them.
 
 ## Project layout
 
 ```
 LM-1/
-├── CMakeLists.txt          # build config: pulls JUCE, defines the plugin
-├── README.md               # this file
-├── ROADMAP.md              # step-by-step path to the full prototype
-└── src.
-    ├── PluginProcessor.h/.cpp   # engine, MIDI handling, parameters, lo-fi
-    ├── PluginEditor.h/.cpp      # pads + knobs UI
-    ├── DrumVoice.h              # one variable-rate sample voice
-    └── DrumSynth.h             # procedural placeholder drum sounds
+├── CMakeLists.txt              # build config: pulls JUCE, defines the plugin + buses
+├── README.md                   # this file
+├── ROADMAP.md                  # build history + possible future work
+├── LM-1_Clone_Design_and_Plan.md  # original architecture/design reference
+├── CHANGELOG.md                # release notes per version
+├── assets/factory_kit/         # drop 12 WAVs here to bundle a factory kit
+└── src/
+    ├── PluginProcessor.*       # engine: MIDI, params, sequencer host-sync, lo-fi,
+    │                           #   banks, multi-out routing
+    ├── PluginEditor.*          # full UI: mixer strips, step grid, transport, banks
+    ├── DrumKit.*               # reference-counted 12-voice kit + sample loading
+    ├── DrumVoice.h             # one variable-rate sample voice
+    ├── DrumSynth.h             # procedural fallback sounds (when no WAV is present)
+    ├── Pattern.h               # step pattern + time-grid (meter / rate / steps)
+    ├── Sequencer.h             # sample-accurate step clock
+    ├── FactoryGrooves.h        # the 100 genre grooves
+    ├── VoiceStripComponent.*   # one mixer strip (pad, sample slot, fader, knobs, out)
+    ├── StepGridComponent.*     # the step grid
+    ├── RetroWidgets.h          # LED text, step arrows, X button
+    ├── LMOneLookAndFeel.h      # vintage knobs/faders/buttons
+    ├── LedDisplay.h            # 7-segment LED readouts
+    ├── TransportButton.h       # flat Play / Rec buttons with LEDs
+    ├── MidiDragSource.h        # drag-pattern-to-DAW handle
+    ├── MidiExport.h            # pattern → .mid builder
+    └── PresetManager.h         # full-state .lm1preset save/load
 ```
 
 ## Before sharing the plugin
 
-For the plugin to load on other people's Macs without Gatekeeper warnings it must
-be **code-signed (Developer ID) and notarized**. That requires an Apple Developer
-account ($99/yr). See the "Distribution" section of `ROADMAP.md`. For your own
-machine during development you can skip this.
+To load on other Macs without Gatekeeper warnings the plugin must be **code-signed
+(Developer ID) and notarized** (requires an Apple Developer account, $99/yr). For
+your own machine during development you can skip this.
