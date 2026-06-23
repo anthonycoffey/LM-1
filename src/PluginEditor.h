@@ -12,9 +12,9 @@
 #include "RetroWidgets.h"
 
 //==============================================================================
-// Editor: a 12-channel voice mixer (one strip per LM-1 instrument) plus the
-// global Master / Lo-Fi / Tune knobs. The step-grid sequencer UI is the next
-// roadmap milestone.
+// Editor: the full LM-1 panel — a 12-channel voice mixer (one strip per
+// instrument), the step-grid sequencer with transport + meter/rate selectors,
+// the bank / groove library, and the global Master / Lo-Fi / Tune / Shuffle.
 //==============================================================================
 class LMOneAudioProcessorEditor : public juce::AudioProcessorEditor,
                                   public juce::ChangeListener,

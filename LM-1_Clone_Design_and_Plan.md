@@ -8,28 +8,24 @@ A plan for building a software drum machine modeled on the **Linn LM-1 Drum Comp
 
 ---
 
-> ## ⚑ Direction update (2026-06)
+> ## ⚑ Status — shipped (currently v0.4.1)
 >
-> This document remains the **architecture reference**, but the project's _priorities_ have
-> been re-pointed since it was written. The goal is now explicitly **a modern drum sequencer
-> that sounds and looks like an LM-1 — not a faithful hardware recreation.** Read this doc for
-> the _how_; read [ROADMAP.md](ROADMAP.md) for the current _what & in what order_.
+> This is the **original architecture & design reference**. The project has since been
+> **built and shipped**, so the phased plan further down is essentially complete: 12
+> voices with per-voice sampling, a host-synced step sequencer with **real meters +
+> triplet/shuffle grids**, a **100-pattern genre library across 12 banks**, a per-voice
+> mixer with **AU multi-out**, MIDI drag-out, the lo-fi character, and vintage styling.
 >
-> **What changed:**
+> Read this doc for the **why** (the rationale still holds). For the current feature set
+> read [README.md](README.md); for status and per-release history read
+> [ROADMAP.md](ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
 >
-> - **Sequencer + drum programming is the core**, and **MIDI export** (export `.mid` + drag a
->   pattern onto the DAW timeline) is a **headline feature** — more important than any LM-1
->   feature not directly related to sequencing.
-> - **Voices:** the authentic **12 instruments, no metronome click**. User-provided WAVs are
->   bundled as the factory kit; per-voice sample loading + presets matter.
-> - **Demoted to optional "charm" (Stage G or omitted):** Timing Correct, Shuffle/swing, song
->   chaining, the numeric-keypad/2-digit-LED data-entry workflow, rear-panel tuning pots, and
->   faithful faceplate chrome. The vintage _look & feel_ is charm, not the point.
-> - **Build order is now modern-workflow-first:** foundation (12 voices + sample loading +
->   per-voice mixer) → sequencer engine → step grid → MIDI export → presets → character/polish.
->
-> Where statements below imply "faithful recreation" as the goal, defer to this note and the
-> reordered stages in ROADMAP.md.
+> A few priorities shifted during the build and live in README/ROADMAP rather than being
+> rewritten below: the **sequencer + MIDI export** became the core; **shuffle and
+> real-time record** were implemented (not omitted as "charm"); pattern slots grew into a
+> **12-bank, 100-groove library**; **multi-out** shipped. Where the text below reads as a
+> to-do or implies a faithful hardware recreation, treat it as **historical** — the
+> current truth is in README/ROADMAP.
 
 ---
 

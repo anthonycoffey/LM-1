@@ -25,9 +25,10 @@ to the Bass voice, etc. Recommended names (one file each):
 | Clave       | `Clave.wav`      | claves |
 | Clap        | `Clap.wav`       | handclap |
 
-Any voice without a matching file falls back to its procedural placeholder. You
-can also load samples per-voice at runtime from the plugin's **Load** button —
-this folder only sets the *default* kit.
+Any voice without a matching file falls back to its procedural sound. You can also
+load samples per-voice at runtime from the strip's **sample-slot button** (the
+folder icon; it becomes an "x" to restore the factory sound) — this folder only
+sets the *default* kit.
 
 Samples keep their native sample rate; the engine resamples for tuning and host
 rate at playback, so 44.1 kHz mono one-shots are ideal.

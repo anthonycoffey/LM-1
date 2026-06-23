@@ -9,7 +9,8 @@
 //
 // Sample references are stored by path (factory voices by name), so a preset
 // that points at a moved/missing user WAV falls back to the default for that
-// voice — see ROADMAP Stage F ("portable preset" embedding is a later add).
+// voice. (Embedding the actual sample data for fully portable presets is a
+// possible future add — see ROADMAP.md.)
 //==============================================================================
 class PresetManager
 {
