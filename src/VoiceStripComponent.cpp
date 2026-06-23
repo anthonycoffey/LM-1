@@ -79,6 +79,14 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     addAndMakeVisible (muteButton);
     addAndMakeVisible (soloButton);
 
+    juce::StringArray outItems { "Main" };
+    for (int o = 1; o <= DrumKit::kNumChannels; ++o)
+        outItems.add ("Out " + juce::String (o));
+    outBox.addItemList (outItems, 1);
+    outBox.setTooltip ("Output bus: Main mix, or a direct out for LUNA. "
+                       "Set several channels to the same Out to group them.");
+    addAndMakeVisible (outBox);
+
     const auto id = "v" + juce::String (index);
     levelAtt = std::make_unique<SliderAttachment> (processor.apvts, id + "_level", levelSlider);
     if (auto* p = processor.apvts.getParameter (id + "_level"))   // double-click fader -> default
@@ -87,6 +95,7 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     tuneAtt  = std::make_unique<SliderAttachment> (processor.apvts, id + "_tune",  tuneSlider);
     muteAtt  = std::make_unique<ButtonAttachment> (processor.apvts, id + "_mute",  muteButton);
     soloAtt  = std::make_unique<ButtonAttachment> (processor.apvts, id + "_solo",  soloButton);
+    outAtt   = std::make_unique<ComboBoxAttachment> (processor.apvts, id + "_out", outBox);
 
     updateSourceLabel();
     refreshShuffle();
@@ -150,7 +159,10 @@ void VoiceStripComponent::resized()
     // VOL label sits above the fader (labels go above their controls).
     levelCaption.setBounds (r.removeFromTop (11));
 
-    // Bottom-up: mute/solo, shuffle, tune, pan. Each label sits above its control.
+    // Bottom-up: output combo, mute/solo, shuffle, tune, pan. Labels sit above controls.
+    // Output routing combo, at the very bottom (under the mute/solo buttons).
+    outBox.setBounds (r.removeFromBottom (15).reduced (1, 0));
+    r.removeFromBottom (3);
     auto bottom = r.removeFromBottom (20);
     muteButton.setBounds (bottom.removeFromLeft (bottom.getWidth() / 2).reduced (1));
     soloButton.setBounds (bottom.reduced (1));

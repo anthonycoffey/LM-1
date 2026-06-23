@@ -99,8 +99,9 @@ private:
     void updateSourceLabel();
     void stepShuffle (int delta);
 
-    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
-    using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
+    using SliderAttachment   = juce::AudioProcessorValueTreeState::SliderAttachment;
+    using ButtonAttachment   = juce::AudioProcessorValueTreeState::ButtonAttachment;
+    using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
 
     LMOneAudioProcessor& processor;
     int index = 0;
@@ -112,6 +113,7 @@ private:
     juce::Slider     levelSlider, panSlider, tuneSlider;
     juce::Label      levelCaption, panCaption, tuneCaption, swingCaption;
     juce::TextButton muteButton { "M" }, soloButton { "S" };
+    juce::ComboBox   outBox;       // output routing: Main / Out 1..12
 
     // Per-track shuffle: < > steppers + an LED readout (no knob).
     StepArrow shufPrev { true,  juce::Colour (0xfffc5824) };
@@ -119,7 +121,8 @@ private:
     LedText   shufLed;
 
     std::unique_ptr<SliderAttachment> levelAtt, panAtt, tuneAtt;
-    std::unique_ptr<ButtonAttachment> muteAtt, soloAtt;
+    std::unique_ptr<ButtonAttachment>   muteAtt, soloAtt;
+    std::unique_ptr<ComboBoxAttachment> outAtt;
     std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoiceStripComponent)

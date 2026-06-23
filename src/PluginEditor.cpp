@@ -230,7 +230,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 850 + kBottomLip + 12);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 868 + kBottomLip + 12);
 }
 
 LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
