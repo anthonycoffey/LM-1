@@ -44,7 +44,14 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
     };
     setupKnob (panSlider);
     setupKnob (tuneSlider);
-    setupKnob (swingSlider);
+
+    // Shuffle: < > steppers + an LED readout (no knob).
+    shufPrev.onClick = [this] { stepShuffle (-1); };
+    shufNext.onClick = [this] { stepShuffle (+1); };
+    addAndMakeVisible (shufPrev);
+    addAndMakeVisible (shufNext);
+    shufLed.setFontHeight (9.0f);
+    addAndMakeVisible (shufLed);
 
     auto setupCaption = [this] (juce::Label& l, const juce::String& t)
     {
@@ -68,13 +75,26 @@ VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIn
 
     const auto id = "v" + juce::String (index);
     levelAtt = std::make_unique<SliderAttachment> (processor.apvts, id + "_level", levelSlider);
+    if (auto* p = processor.apvts.getParameter (id + "_level"))   // double-click fader -> default
+        levelSlider.setDoubleClickReturnValue (true, p->convertFrom0to1 (p->getDefaultValue()));
     panAtt   = std::make_unique<SliderAttachment> (processor.apvts, id + "_pan",   panSlider);
     tuneAtt  = std::make_unique<SliderAttachment> (processor.apvts, id + "_tune",  tuneSlider);
     muteAtt  = std::make_unique<ButtonAttachment> (processor.apvts, id + "_mute",  muteButton);
     soloAtt  = std::make_unique<ButtonAttachment> (processor.apvts, id + "_solo",  soloButton);
-    swingAtt = std::make_unique<SliderAttachment> (processor.apvts, id + "_swing", swingSlider);
 
     updateSourceLabel();
+    refreshShuffle();
+}
+
+void VoiceStripComponent::stepShuffle (int delta)
+{
+    ChoiceParam::step (processor.apvts.getParameter ("v" + juce::String (index) + "_swing"), delta);
+    refreshShuffle();
+}
+
+void VoiceStripComponent::refreshShuffle()
+{
+    shufLed.setText (ChoiceParam::name (processor.apvts.getParameter ("v" + juce::String (index) + "_swing")));
 }
 
 void VoiceStripComponent::updateSourceLabel()
@@ -115,33 +135,42 @@ void VoiceStripComponent::resized()
 {
     auto r = getLocalBounds().reduced (4);
 
-    padButton.setBounds (r.removeFromTop (26));
+    padButton.setBounds (r.removeFromTop (50));   // squarer, pad-like
     r.removeFromTop (3);
     loadButton.setBounds (r.removeFromTop (18));
     sourceLabel.setBounds (r.removeFromTop (13));
     r.removeFromTop (4);
 
-    // Bottom-up: mute/solo row, then swing / tune / pan knobs (label below each).
+    // VOL label sits above the fader (labels go above their controls).
+    levelCaption.setBounds (r.removeFromTop (11));
+
+    // Bottom-up: mute/solo, shuffle, tune, pan. Each label sits above its control.
     auto bottom = r.removeFromBottom (20);
     muteButton.setBounds (bottom.removeFromLeft (bottom.getWidth() / 2).reduced (1));
     soloButton.setBounds (bottom.reduced (1));
     r.removeFromBottom (4);
 
-    auto swingArea = r.removeFromBottom (58);
-    swingCaption.setBounds (swingArea.removeFromBottom (11));
-    swingSlider.setBounds (swingArea);
+    // Shuffle: SHUF label on top, LED readout, then < > arrows beneath it.
+    auto shufArea = r.removeFromBottom (42);
+    swingCaption.setBounds (shufArea.removeFromTop (11));
+    auto shufArrows = shufArea.removeFromBottom (15);
+    shufLed.setBounds (shufArea.reduced (2, 0));
+    {
+        auto arrows = shufArrows.withSizeKeepingCentre (44, juce::jmin (shufArrows.getHeight(), 14));
+        shufPrev.setBounds (arrows.removeFromLeft (22));
+        shufNext.setBounds (arrows);
+    }
 
     auto tuneArea = r.removeFromBottom (58);
-    tuneCaption.setBounds (tuneArea.removeFromBottom (11));
+    tuneCaption.setBounds (tuneArea.removeFromTop (11));
     tuneSlider.setBounds (tuneArea);
 
     auto panArea = r.removeFromBottom (58);
-    panCaption.setBounds (panArea.removeFromBottom (11));
+    panCaption.setBounds (panArea.removeFromTop (11));
     panSlider.setBounds (panArea);
 
     r.removeFromBottom (4);
 
-    // "VOL" caption sits below the fader, matching the label-below-control pattern.
-    levelCaption.setBounds (r.removeFromBottom (11));
+    // Remaining space is the level fader (its VOL label is above it).
     levelSlider.setBounds (r);
 }

@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "RetroWidgets.h"
 
 //==============================================================================
 // The per-voice sample-slot button: a folder icon when the voice plays the
@@ -69,9 +70,13 @@ public:
     // Re-read the loaded-sample name from the processor (e.g. after a state restore).
     void refreshSourceLabel() { updateSourceLabel(); }
 
+    // Re-read this track's shuffle setting into the LED (driven by the editor timer).
+    void refreshShuffle();
+
 private:
     void chooseSample();
     void updateSourceLabel();
+    void stepShuffle (int delta);
 
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
@@ -83,11 +88,16 @@ private:
     juce::TextButton padButton;
     SampleSlotButton loadButton;
     juce::Label      sourceLabel;
-    juce::Slider     levelSlider, panSlider, tuneSlider, swingSlider;
+    juce::Slider     levelSlider, panSlider, tuneSlider;
     juce::Label      levelCaption, panCaption, tuneCaption, swingCaption;
     juce::TextButton muteButton { "M" }, soloButton { "S" };
 
-    std::unique_ptr<SliderAttachment> levelAtt, panAtt, tuneAtt, swingAtt;
+    // Per-track shuffle: < > steppers + an LED readout (no knob).
+    StepArrow shufPrev { true,  juce::Colour (0xfffc5824) };
+    StepArrow shufNext { false, juce::Colour (0xfffc5824) };
+    LedText   shufLed;
+
+    std::unique_ptr<SliderAttachment> levelAtt, panAtt, tuneAtt;
     std::unique_ptr<ButtonAttachment> muteAtt, soloAtt;
     std::unique_ptr<juce::FileChooser> chooser;
 

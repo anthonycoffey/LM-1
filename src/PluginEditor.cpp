@@ -34,6 +34,11 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     auto setupSlider = [this] (juce::Slider& s, juce::Label& lab, const juce::String& text)
     {
         s.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        // Set the readout colours on the slider itself — the value box is created
+        // before the slider inherits the custom LAF, so LAF defaults wouldn't apply.
+        s.setColour (juce::Slider::textBoxTextColourId,       juce::Colour (0xffff3322)); // LED red
+        s.setColour (juce::Slider::textBoxBackgroundColourId, juce::Colour (0xff160a08)); // dark glass
+        s.setColour (juce::Slider::textBoxOutlineColourId,    juce::Colours::transparentBlack);
         s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 18);
         addAndMakeVisible (s);
         lab.setText (text, juce::dontSendNotification);
@@ -44,12 +49,31 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     setupSlider (masterSlider,  masterLabel,  "Master");
     setupSlider (lofiSlider,    lofiLabel,    "Lo-Fi");
     setupSlider (tuneSlider,    tuneLabel,    "Tune");
-    setupSlider (shuffleSlider, shuffleLabel, "Shuffle");
+
+    // Global shuffle: label + < > steppers + LED readout (no knob).
+    shuffleLabel.setText ("Shuffle", juce::dontSendNotification);
+    shuffleLabel.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (shuffleLabel);
+    shufPrev.onClick = [this] { ChoiceParam::step (processor.apvts.getParameter ("shuffle"), -1); refreshShuffleLeds(); };
+    shufNext.onClick = [this] { ChoiceParam::step (processor.apvts.getParameter ("shuffle"), +1); refreshShuffleLeds(); };
+    addAndMakeVisible (shufPrev);
+    addAndMakeVisible (shufNext);
+    shuffleLed.setFontHeight (11.0f);
+    addAndMakeVisible (shuffleLed);
 
     masterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "masterGain", masterSlider);
     lofiAttach    = std::make_unique<SliderAttachment> (processor.apvts, "lofi",       lofiSlider);
     tuneAttach    = std::make_unique<SliderAttachment> (processor.apvts, "tune",       tuneSlider);
-    shuffleAttach = std::make_unique<SliderAttachment> (processor.apvts, "shuffle",    shuffleSlider);
+
+    // Double-click any global knob to reset it to its default value.
+    auto setReset = [this] (juce::Slider& s, const juce::String& id)
+    {
+        if (auto* p = processor.apvts.getParameter (id))
+            s.setDoubleClickReturnValue (true, p->convertFrom0to1 (p->getDefaultValue()));
+    };
+    setReset (masterSlider, "masterGain");
+    setReset (lofiSlider,   "lofi");
+    setReset (tuneSlider,   "tune");
 
     // --- Transport bar -------------------------------------------------------
     // PLAY toggles the internal clock; the lamp (not the label/colour) shows state.
@@ -75,6 +99,8 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
 
     tempoLabel.setText ("TEMPO", juce::dontSendNotification);
     tempoLabel.setJustificationType (juce::Justification::centredRight);
+    tempoLabel.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+    tempoLabel.setColour (juce::Label::textColourId, LMColours::orange);
     addAndMakeVisible (tempoLabel);
 
     tempoSlider.setSliderStyle (juce::Slider::LinearHorizontal);
@@ -87,11 +113,16 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
 
     stepsLabel.setText ("STEPS", juce::dontSendNotification);
     stepsLabel.setJustificationType (juce::Justification::centredRight);
+    stepsLabel.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+    stepsLabel.setColour (juce::Label::textColourId, LMColours::orange);
     addAndMakeVisible (stepsLabel);
 
     stepsBox.addItem ("8",  8);
     stepsBox.addItem ("16", 16);
     stepsBox.addItem ("32", 32);
+    stepsBox.setColour (juce::ComboBox::textColourId,       juce::Colour (0xffff3322));  // LED red
+    stepsBox.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xff160a08));  // dark glass
+    stepsBox.setColour (juce::ComboBox::outlineColourId,    juce::Colours::black);
     stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
     stepsBox.onChange = [this]
     {
@@ -156,6 +187,8 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     // Preset library: Bank LED + prev/next, 8 slot buttons, Save.
     bankLabel.setText ("BANK", juce::dontSendNotification);
     bankLabel.setJustificationType (juce::Justification::centredRight);
+    bankLabel.setFont (juce::FontOptions (10.5f, juce::Font::bold));
+    bankLabel.setColour (juce::Label::textColourId, LMColours::orange);
     addAndMakeVisible (bankLabel);
     addAndMakeVisible (bankLed);
 
@@ -175,6 +208,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
             {
                 processor.loadSlot (i);
                 grid.reloadFromProcessor();
+                stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
             }
             refreshBankUI();
         };
@@ -194,7 +228,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek, 820 + kBottomLip + 12);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 820 + kBottomLip + 12);
 }
 
 LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
@@ -223,6 +257,7 @@ void LMOneAudioProcessorEditor::timerCallback()
 
     playButton.setLedOn (step >= 0);                 // lit while the sequencer rolls
     recButton.setLedOn (processor.isRecordArmed());
+    refreshShuffleLeds();                            // catch host/automation changes
 
     if (processor.pollRecordedNotes())               // drain live-recorded hits onto the grid
         grid.reloadFromProcessor();
@@ -284,9 +319,17 @@ void LMOneAudioProcessorEditor::gotoBank (int newBank)
     {
         processor.loadSlot (slot);
         grid.reloadFromProcessor();
+        stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
     }
 
     refreshBankUI();
+}
+
+void LMOneAudioProcessorEditor::refreshShuffleLeds()
+{
+    shuffleLed.setText (ChoiceParam::name (processor.apvts.getParameter ("shuffle")));
+    for (auto* s : strips)
+        s->refreshShuffle();
 }
 
 void LMOneAudioProcessorEditor::savePresetDialog()
@@ -359,11 +402,11 @@ void LMOneAudioProcessorEditor::paint (juce::Graphics& g)
     // Title.
     g.setColour (LMColours::orange);
     g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
-    g.drawText ("LM-1", kCheek + 12, 8, 200, 26, juce::Justification::centredLeft);
+    g.drawText ("LM-1", kCheek + kGap + 12, 8, 200, 26, juce::Justification::centredLeft);
     g.setColour (juce::Colours::grey);
     g.setFont (juce::FontOptions (12.0f));
     g.drawText ("12-channel drum machine inspired by the LM-1",
-                kCheek + 92, 12, getWidth() - 2 * kCheek - 100, 18, juce::Justification::centredLeft);
+                kCheek + kGap + 92, 12, getWidth() - 2 * (kCheek + kGap) - 100, 18, juce::Justification::centredLeft);
 
     // Orange section frames with labels on the top border.
     drawSection (g, rGlobals, "GLOBAL");
@@ -396,6 +439,8 @@ void LMOneAudioProcessorEditor::resized()
     auto area = getLocalBounds();
     area.removeFromLeft  (kCheek);                  // wood cheeks
     area.removeFromRight (kCheek);
+    area.removeFromLeft  (kGap);                    // breathing room between wood and content
+    area.removeFromRight (kGap);
     area.removeFromTop   (34);                       // title bar
     area.removeFromBottom (kBottomLip);              // wood lip / gap beneath the sequencer
 
@@ -415,7 +460,16 @@ void LMOneAudioProcessorEditor::resized()
         place (masterSlider,  masterLabel);
         place (lofiSlider,    lofiLabel);
         place (tuneSlider,    tuneLabel);
-        place (shuffleSlider, shuffleLabel);
+        {
+            // Shuffle cell: label on top, LED readout, then < > steppers beneath it.
+            auto cell = g.removeFromLeft (kW);
+            shuffleLabel.setBounds (cell.removeFromTop (16));
+            auto arrowsRow = cell.removeFromBottom (20);
+            shuffleLed.setBounds (cell.reduced (8, 2));
+            auto arrows = arrowsRow.withSizeKeepingCentre (54, juce::jmin (arrowsRow.getHeight(), 18));
+            shufPrev.setBounds (arrows.removeFromLeft (27));
+            shufNext.setBounds (arrows);
+        }
     }
 
     // SEQUENCER — transport controls + pattern slots + step grid, all together.
