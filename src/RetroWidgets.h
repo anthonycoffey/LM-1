@@ -70,7 +70,8 @@ public:
 
         g.setColour (juce::Colour (0xffff3322));            // lit red
         g.setFont (juce::FontOptions (fontHeight, juce::Font::bold));
-        g.drawText (text.toUpperCase(), getLocalBounds(), juce::Justification::centred);
+        g.drawFittedText (text.toUpperCase(), getLocalBounds().reduced (4, 0),   // scale long text to fit
+                          juce::Justification::centred, 1, 0.6f);
     }
 
 private:

@@ -61,12 +61,12 @@ LMOneAudioProcessor::LMOneAudioProcessor()
     seqTempoParam = apvts.getRawParameterValue ("seqTempo");
     shuffleParam  = apvts.getRawParameterValue ("shuffle");
 
-    // Preset library: factory banks 1-5 + any user-saved banks. Start on the
-    // first factory groove so the sequencer plays something out of the box.
+    // Preset library: factory banks 1-10 (genre) + any user-saved banks. Start on
+    // the first factory groove so the sequencer plays something out of the box.
     loadFactoryLibrary();
     loadUserLibrary();
     currentBank     = 0;
-    workingPattern  = library[0][0].pattern;   // "Basic Rock"
+    workingPattern  = library[0][0].pattern;   // "Billie Jean" (Bank 1, slot 1)
     workingPattern.numLanes = DrumKit::kNumVoices;
     publishPattern (workingPattern);
 
@@ -286,9 +286,9 @@ void LMOneAudioProcessor::setStep (int lane, int step, juce::uint8 velocity)
     publishPattern (workingPattern);
 }
 
-void LMOneAudioProcessor::setPatternLength (int numSteps)
+void LMOneAudioProcessor::setPatternMeter (int num, int den, int rate)
 {
-    workingPattern.numSteps = juce::jlimit (1, Pattern::kMaxSteps, numSteps);
+    workingPattern.setMeter (num, den, rate);   // sets time sig + rate, recomputes numSteps
     publishPattern (workingPattern);
 }
 
@@ -377,10 +377,16 @@ juce::String LMOneAudioProcessor::slotName (int slot) const
                                             : juce::String();
 }
 
+juce::String LMOneAudioProcessor::slotGenre (int slot) const
+{
+    return (slot >= 0 && slot < kBankSlots) ? library[(size_t) currentBank][(size_t) slot].genre
+                                            : juce::String();
+}
+
 //==============================================================================
 void LMOneAudioProcessor::loadFactoryLibrary()
 {
-    const auto banks = FactoryGrooves::build();   // 5 banks x 8
+    const auto banks = FactoryGrooves::build();   // 10 genre banks x 10
     for (int bk = 0; bk < (int) banks.size() && bk < kNumBanks; ++bk)
         for (int sl = 0; sl < (int) banks[(size_t) bk].size() && sl < kBankSlots; ++sl)
         {
@@ -388,6 +394,7 @@ void LMOneAudioProcessor::loadFactoryLibrary()
             dst.pattern = banks[(size_t) bk][(size_t) sl].pattern;
             dst.tempo   = banks[(size_t) bk][(size_t) sl].tempo;
             dst.name    = banks[(size_t) bk][(size_t) sl].name;
+            dst.genre   = banks[(size_t) bk][(size_t) sl].genre;
             dst.filled  = true;
             dst.factory = true;
         }
@@ -572,7 +579,8 @@ void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                     addEvent (p, metadata.samplePosition, msg.getFloatVelocity());
                     if (recording)
                     {
-                        const int step = sequencer.quantizeToNearestStep (metadata.samplePosition, pat.numSteps);
+                        const int step = sequencer.quantizeToNearestStep (metadata.samplePosition, pat.numSteps,
+                                                                          TimeGrid::stepPpq (pat.rate));
                         if (step >= 0)
                             pushRecordEvent (p, step,
                                 (juce::uint8) juce::jlimit (1, 127, juce::roundToInt (msg.getFloatVelocity() * 127.0f)));

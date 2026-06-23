@@ -105,16 +105,21 @@ public:
     // Working sequence (single, edited in the grid). Edits publish to the audio thread.
     Pattern getPattern() const { return workingPattern; }
     void    setStep (int lane, int step, juce::uint8 velocity);
-    void    setPatternLength (int numSteps);
+    void    setPatternMeter (int num, int den, int rate);   // sets time sig + rate; derives steps
     void    clearPattern();
+
+    // Current working-pattern meter + rate (for the editor's Meter / Rate selectors).
+    int  getTsNum() const noexcept { return workingPattern.tsNum; }
+    int  getTsDen() const noexcept { return workingPattern.tsDen; }
+    int  getRate()  const noexcept { return workingPattern.rate; }
     float   getSeqTempo() const noexcept { return seqTempoParam != nullptr ? seqTempoParam->load() : 120.0f; }
 
-    // Preset library: 100 banks x 8 slots. Banks 1-5 are factory grooves; banks
-    // 6-100 are user-saveable (persisted to disk). The editor works with the
+    // Preset library: 12 banks x 10 slots. Banks 1-10 are factory genre grooves;
+    // banks 11-12 are user-saveable (persisted to disk). The editor works with the
     // "current bank"; slots load into / save from the working sequence.
-    static constexpr int kNumBanks        = 10;   // banks 1-5 factory, 6-10 user
+    static constexpr int kNumBanks        = 12;   // banks 1-10 factory (genre), 11-12 user
     static constexpr int kBankSlots       = 10;
-    static constexpr int kNumFactoryBanks = 5;
+    static constexpr int kNumFactoryBanks = 10;
     int  getCurrentBank() const noexcept { return currentBank; }
     void setCurrentBank (int bank);
     int  getCurrentSlot() const noexcept { return currentSlot; }   // highlighted slot (-1 = none)
@@ -123,6 +128,7 @@ public:
     void saveSlot (int slot);                  // working sequence -> current bank (user banks only)
     bool slotFilled (int slot) const;          // is a slot in the current bank populated?
     juce::String slotName (int slot) const;    // name of a slot in the current bank
+    juce::String slotGenre (int slot) const;   // genre tag of a slot in the current bank ("" if none)
     bool currentBankIsFactory() const noexcept { return currentBank < kNumFactoryBanks; }
 
     // Full state capture/restore — shared by host state and the preset manager.
@@ -203,6 +209,7 @@ private:
         bool         filled  = false;
         bool         factory = false;
         juce::String name;
+        juce::String genre;   // factory genre tag (e.g. "Funk"); empty for user slots
     };
     std::array<std::array<PresetSlot, (size_t) kBankSlots>, (size_t) kNumBanks> library;
     int currentBank = 0;
