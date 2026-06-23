@@ -457,12 +457,12 @@ void LMOneAudioProcessorEditor::resized()
         place (lofiSlider,    lofiLabel);
         place (tuneSlider,    tuneLabel);
         {
-            // Shuffle cell: label on top, LED readout, then < > steppers beneath it.
+            // Shuffle cell: label, < > steppers, then the LED value below them —
+            // matching the value-below-control layout of the other global fields.
             auto cell = g.removeFromLeft (kW);
             shuffleLabel.setBounds (cell.removeFromTop (16));
-            auto arrowsRow = cell.removeFromBottom (20);
-            shuffleLed.setBounds (cell.reduced (8, 2));
-            auto arrows = arrowsRow.withSizeKeepingCentre (54, juce::jmin (arrowsRow.getHeight(), 18));
+            shuffleLed.setBounds (cell.removeFromBottom (18).reduced (8, 1));
+            auto arrows = cell.withSizeKeepingCentre (54, juce::jmin (cell.getHeight(), 22));
             shufPrev.setBounds (arrows.removeFromLeft (27));
             shufNext.setBounds (arrows);
         }
@@ -489,7 +489,7 @@ void LMOneAudioProcessorEditor::resized()
         stepsLabel.setBounds (trb.removeFromLeft (46));
         stepsBox.setBounds   (trb.removeFromLeft (72));
         trb.removeFromLeft (8);
-        clearButton.setBounds (trb.removeFromLeft (28));   // small flat X button
+        clearButton.setBounds (trb.removeFromLeft (28).withSizeKeepingCentre (24, 24));   // small flat X
         trb.removeFromLeft (12);
         tempoLabel.setBounds (trb.removeFromLeft (46));
         tempoLed.setBounds (trb.removeFromRight (54).reduced (0, 2));

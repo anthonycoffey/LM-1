@@ -112,8 +112,8 @@ public:
             g.fillRoundedRectangle ((float) x, cy - 2.0f, sliderPos - x, 4.0f, 2.0f);
             const float capW = 13.0f, capH = height * 0.82f;
             Rectangle<float> cap (sliderPos - capW * 0.5f, y + (height - capH) * 0.5f, capW, capH);
-            g.setGradientFill (ColourGradient (LMColours::metalHi, cap.getX(), cap.getY(),
-                                               LMColours::metalLo, cap.getX(), cap.getBottom(), false));
+            g.setGradientFill (ColourGradient (Colour (0xff45423f), cap.getX(), cap.getY(),
+                                               Colour (0xff201e1d), cap.getX(), cap.getBottom(), false));
             g.fillRoundedRectangle (cap, 2.0f);
             g.setColour (Colours::black.withAlpha (0.7f));
             g.drawRoundedRectangle (cap, 2.0f, 1.0f);
