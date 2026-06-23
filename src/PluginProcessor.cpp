@@ -20,8 +20,10 @@ auto LMOneAudioProcessor::makeBusesProperties() -> BusesProperties
 {
     BusesProperties props;
     props = props.withOutput ("Main", juce::AudioChannelSet::stereo(), true);
+    // Generic direct outs — any channel can route to any of these (grouping), so
+    // they're numbered, not per-voice. The user fills Out 1, Out 2... in order.
     for (int i = 0; i < DrumKit::kNumChannels; ++i)
-        props = props.withOutput (juce::String (LMOne::kVoiceDefs[(size_t) i].name) + " Out",
+        props = props.withOutput ("Out " + juce::String (i + 1),
                                   juce::AudioChannelSet::stereo(), false);
     return props;
 }
@@ -134,10 +136,14 @@ LMOneAudioProcessor::createParameterLayout()
             ParameterID { id + "_swing", 1 }, n + " Swing",
             juce::StringArray { "Follow", "Straight", "Light", "Medium", "Triplet", "Hard" }, 0));
 
-        // Output routing: off = Main mix (default), on = this channel's direct out
-        // (which appears in LUNA's multi-out mixer as "<voice> Out").
-        layout.add (std::make_unique<AudioParameterBool> (
-            ParameterID { id + "_out", 1 }, n + " Direct Out", false));
+        // Output routing: Main (default) or one of the numbered direct outs. Several
+        // channels can share an "Out N" to group them; in LUNA, add that out in the
+        // multi-out mixer. Filling Out 1, Out 2... in order keeps the buses contiguous.
+        juce::StringArray outChoices { "Main" };
+        for (int o = 1; o <= DrumKit::kNumChannels; ++o)
+            outChoices.add ("Out " + juce::String (o));
+        layout.add (std::make_unique<AudioParameterChoice> (
+            ParameterID { id + "_out", 1 }, n + " Output", outChoices, 0));
     }
 
     return layout;
@@ -609,13 +615,12 @@ void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // that bus yet (so it's never silent).
     auto mainBus = getBusBuffer (buffer, false, 0);
     std::array<juce::AudioBuffer<float>, (size_t) DrumKit::kNumChannels> directBus;
-    std::array<bool, (size_t) DrumKit::kNumChannels> toDirect {};
+    std::array<int, (size_t) DrumKit::kNumChannels> outIdx {};
     for (int c = 0; c < DrumKit::kNumChannels; ++c)
     {
         directBus[(size_t) c] = getBusBuffer (buffer, false, 1 + c);
-        toDirect[(size_t) c]  = voiceParams[(size_t) c].out != nullptr
-                             && voiceParams[(size_t) c].out->load() > 0.5f
-                             && directBus[(size_t) c].getNumChannels() > 0;
+        outIdx[(size_t) c]    = voiceParams[(size_t) c].out != nullptr
+                              ? (int) voiceParams[(size_t) c].out->load() : 0;   // 0=Main, k=Out k
     }
 
     // --- Segmented render: fire events at their offsets, render between them --
@@ -633,7 +638,10 @@ void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         for (int v = 0; v < (int) voices.size(); ++v)
         {
             const int c = channelForVoice (v);
-            auto& dest = toDirect[(size_t) c] ? directBus[(size_t) c] : mainBus;
+            const int o = outIdx[(size_t) c];                      // 0 = Main, 1..N = Out o
+            const bool direct = o >= 1 && o <= DrumKit::kNumChannels
+                              && directBus[(size_t) (o - 1)].getNumChannels() > 0;
+            auto& dest = direct ? directBus[(size_t) (o - 1)] : mainBus;
             voices[(size_t) v].render (dest, cursor, next - cursor, lvl[(size_t) c], pn[(size_t) c]);
         }
         cursor = next;
