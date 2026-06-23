@@ -66,7 +66,7 @@ private:
     LedDisplay       stepLed { 2 }, tempoLed { 3 }, bankLed { 3 };
     juce::ComboBox   stepsBox;
     juce::Label      stepsLabel;
-    juce::TextButton clearButton   { "Clear" };
+    XButton          clearButton;   // orange "X" — clears the grid
     juce::TextButton optionsButton;            // gear: holds Export MIDI + future options
     std::unique_ptr<juce::FileChooser> midiChooser;
     std::unique_ptr<SliderAttachment> tempoAttach;

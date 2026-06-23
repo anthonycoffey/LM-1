@@ -203,13 +203,9 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
         b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
         b->onClick = [this, i]
         {
-            processor.setCurrentSlot (i);
-            if (processor.slotFilled (i))
-            {
-                processor.loadSlot (i);
-                grid.reloadFromProcessor();
-                stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
-            }
+            processor.loadSlot (i);   // loads the preset, or empties the grid for an empty slot
+            grid.reloadFromProcessor();
+            stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
             refreshBankUI();
         };
         addAndMakeVisible (b);
@@ -306,21 +302,15 @@ void LMOneAudioProcessorEditor::gotoBank (int newBank)
 {
     processor.setCurrentBank (newBank);
 
-    // Auto-load the groove under the selected slot so flipping banks previews
-    // them (the jukebox feel). After a Clear nothing is selected, so fall back
-    // to the first slot. An empty slot loads nothing and leaves the grid alone,
-    // which keeps an unsaved beat intact when you browse to a blank user bank.
+    // Show the same slot position in the new bank: a filled preset loads, an
+    // empty (user) preset empties the grid. After a Clear, fall back to slot 1.
     int slot = processor.getCurrentSlot();
     if (slot < 0)
         slot = 0;
-    processor.setCurrentSlot (slot);
 
-    if (processor.slotFilled (slot))
-    {
-        processor.loadSlot (slot);
-        grid.reloadFromProcessor();
-        stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
-    }
+    processor.loadSlot (slot);   // reflect this bank's slot (empties the grid for an empty preset)
+    grid.reloadFromProcessor();
+    stepsBox.setSelectedId (processor.getNumSteps(), juce::dontSendNotification);
 
     refreshBankUI();
 }
@@ -493,7 +483,7 @@ void LMOneAudioProcessorEditor::resized()
         stepsLabel.setBounds (trb.removeFromLeft (46));
         stepsBox.setBounds   (trb.removeFromLeft (72));
         trb.removeFromLeft (8);
-        clearButton.setBounds (trb.removeFromLeft (52));
+        clearButton.setBounds (trb.removeFromLeft (34));   // square X button
         trb.removeFromLeft (12);
         tempoLabel.setBounds (trb.removeFromLeft (46));
         tempoLed.setBounds (trb.removeFromRight (54).reduced (0, 2));

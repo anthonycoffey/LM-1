@@ -76,6 +76,37 @@ private:
 };
 
 //==============================================================================
+// XButton — an orange "X" in an orange-bordered square. Hover/press inverts it
+// (orange fill, dark X). Used for Clear, to drop the white "Clear" text.
+//==============================================================================
+class XButton : public juce::Button
+{
+public:
+    XButton() : juce::Button ("clear") {}
+
+    void paintButton (juce::Graphics& g, bool over, bool down) override
+    {
+        const juce::Colour orange (0xfffc5824);
+        const bool fill = over || down;
+
+        auto b = getLocalBounds().toFloat();
+        const float s = juce::jmin (b.getWidth(), b.getHeight());
+        juce::Rectangle<float> sq (0.0f, 0.0f, s, s);
+        sq.setCentre (b.getCentre());
+        sq = sq.reduced (1.5f);
+
+        if (fill) { g.setColour (down ? orange.darker (0.15f) : orange); g.fillRoundedRectangle (sq, 3.0f); }
+        g.setColour (orange);
+        g.drawRoundedRectangle (sq, 3.0f, 1.4f);
+
+        auto x = sq.reduced (sq.getWidth() * 0.30f);
+        g.setColour (fill ? juce::Colour (0xff141312) : orange);   // inverted X when filled
+        g.drawLine (x.getX(), x.getY(),      x.getRight(), x.getBottom(), 1.8f);
+        g.drawLine (x.getX(), x.getBottom(), x.getRight(), x.getY(),      1.8f);
+    }
+};
+
+//==============================================================================
 // Helpers to step / read an AudioParameterChoice from arrow buttons.
 //==============================================================================
 namespace ChoiceParam

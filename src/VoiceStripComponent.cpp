@@ -137,7 +137,7 @@ void VoiceStripComponent::resized()
 
     padButton.setBounds (r.removeFromTop (50));   // squarer, pad-like
     r.removeFromTop (3);
-    loadButton.setBounds (r.removeFromTop (18));
+    loadButton.setBounds (r.removeFromTop (24));   // more padding above/below the icon
     sourceLabel.setBounds (r.removeFromTop (13));
     r.removeFromTop (4);
 

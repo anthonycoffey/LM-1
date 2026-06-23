@@ -49,6 +49,17 @@ public:
 
     int  getCurrentStepForUi() const noexcept { return currentStepForUi.load (std::memory_order_relaxed); }
 
+    // Nearest step to a note arriving at sampleOffset within the current block —
+    // used by real-time record. Returns -1 when the sequencer isn't running.
+    int quantizeToNearestStep (int sampleOffset, int numSteps) const noexcept
+    {
+        if (lastSource == Source::None) return -1;
+        const double ppq = lastBlockPpq + lastPpqPerSample * (double) sampleOffset;
+        const long long nearest = (long long) std::llround (ppq / 0.25);   // 0.25 ppq = one 16th
+        const int n = juce::jmax (1, numSteps);
+        return (int) (((nearest % n) + n) % n);
+    }
+
     // Scan the block and fire steps. fire signature: void(int lane, int sampleOffset, float velocity).
     template <typename FireFn>
     void process (const Pattern& pattern, const Transport& tr, int numSamples, FireFn&& fire)
@@ -89,6 +100,9 @@ public:
         const int    numLanes     = juce::jlimit (1, Pattern::kMaxLanes, pattern.numLanes);
         const double stepPpq      = 0.25; // 16th note
         const double ppqPerSample = (bpm / 60.0 / juce::jmax (1.0, tr.sampleRate)) ;
+
+        lastBlockPpq     = ppqAtStart;    // remembered so record can quantize to nearest step
+        lastPpqPerSample = ppqPerSample;
 
         auto laneSwingAmt = [&tr] (int lane) -> double
         {
@@ -144,6 +158,8 @@ private:
 
     double sampleRate = 44100.0;
     double internalPpq = 0.0;
+    double lastBlockPpq = 0.0;       // ppq at the start of the current block
+    double lastPpqPerSample = 0.0;   // ppq advance per sample this block
     long long lastUiStep = std::numeric_limits<long long>::min();
     long long laneLastStep[Pattern::kMaxLanes] {};
     Source lastSource = Source::None;
