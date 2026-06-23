@@ -55,6 +55,7 @@ private:
     juce::Label      bankLabel;
     StepArrow bankPrev { true,  LMColours::orange };   // previous bank
     StepArrow bankNext { false, LMColours::orange };   // next bank
+    LedText   nowPlayingLed;                            // "GENRE - pattern name" of the loaded slot
     juce::TextButton  saveButton { "Save Pattern" };
     std::unique_ptr<juce::FileChooser> presetChooser;
 

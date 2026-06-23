@@ -203,6 +203,9 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     addAndMakeVisible (bankPrev);
     addAndMakeVisible (bankNext);
 
+    nowPlayingLed.setFontHeight (10.0f);   // "GENRE - name" readout for the loaded slot
+    addAndMakeVisible (nowPlayingLed);
+
     for (int i = 0; i < LMOneAudioProcessor::kBankSlots; ++i)
     {
         auto* b = new juce::TextButton (juce::String (i + 1));
@@ -293,6 +296,19 @@ void LMOneAudioProcessorEditor::exportMidiToFile()
 void LMOneAudioProcessorEditor::refreshBankUI()
 {
     bankLed.setText (juce::String (processor.getCurrentBank() + 1));
+
+    const int cur = processor.getCurrentSlot();
+    if (cur >= 0 && processor.slotFilled (cur))
+    {
+        const auto gnr = processor.slotGenre (cur);
+        const auto nm  = processor.slotName (cur);
+        nowPlayingLed.setText (gnr.isNotEmpty() ? (gnr + " - " + nm) : nm);
+    }
+    else
+    {
+        nowPlayingLed.setText ("--");
+    }
+
     for (int i = 0; i < slotButtons.size(); ++i)
     {
         const bool filled = processor.slotFilled (i);
@@ -502,6 +518,8 @@ void LMOneAudioProcessorEditor::resized()
         bankPrev.setBounds  (pr.removeFromLeft (22));
         bankLed.setBounds   (pr.removeFromLeft (42).reduced (0, 1));
         bankNext.setBounds  (pr.removeFromLeft (22));
+        pr.removeFromLeft (10);
+        nowPlayingLed.setBounds (pr.removeFromLeft (160).reduced (0, 1));   // GENRE - name
         pr.removeFromLeft (10);
         saveButton.setBounds (pr.removeFromRight (88));
         pr.removeFromRight (10);
