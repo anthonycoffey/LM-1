@@ -6,10 +6,11 @@ and the git tags (`vX.Y.Z`).
 ## [0.4.2] - 2026-06-24
 
 ### Fixed
-- **Multi-out now supports mono or stereo direct outs.** Bus validation previously
-  rejected anything but stereo, so the host could only add stereo multi-out tracks;
-  it now accepts mono, stereo, or disabled per direct out. A voice routed to a mono
-  out is written at unity (pan is ignored on a mono bus, avoiding a +3 dB center bump).
+- **Mono multi-out tracks.** The direct outs are now declared **mono** (they carry
+  mono drum voices) — that's what makes LUNA offer mono multi-out tracks; declaring
+  them stereo made LUNA treat the plugin as stereo-only. Bus validation accepts mono,
+  stereo, or disabled per direct out, and a voice routed to a mono out is written at
+  unity (pan is meaningless on one channel, so no +3 dB center bump).
 
 ## [0.4.1] - 2026-06-23
 
