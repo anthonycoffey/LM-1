@@ -3,6 +3,15 @@
 All notable changes to LM-1. Versions follow the `CMakeLists.txt` project version
 and the git tags (`vX.Y.Z`).
 
+## [0.4.2] - 2026-06-24
+
+### Fixed
+- **Mono multi-out tracks.** The direct outs are now declared **mono** (they carry
+  mono drum voices) — that's what makes LUNA offer mono multi-out tracks; declaring
+  them stereo made LUNA treat the plugin as stereo-only. Bus validation accepts mono,
+  stereo, or disabled per direct out, and a voice routed to a mono out is written at
+  unity (pan is meaningless on one channel, so no +3 dB center bump).
+
 ## [0.4.1] - 2026-06-23
 
 ### Added
@@ -51,6 +60,7 @@ First tagged release — a playable AU/VST3/Standalone LM-1: 12 voices, per-voic
 sampling, host-synced step sequencer + grid, per-voice mixer, MIDI export
 (file + drag-out), and global Master / Lo-Fi / Tune.
 
+[0.4.2]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.4.2
 [0.4.1]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.4.1
 [0.4.0]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.4.0
 [0.3.0]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.3.0

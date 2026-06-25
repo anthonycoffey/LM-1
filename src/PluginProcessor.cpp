@@ -21,10 +21,12 @@ auto LMOneAudioProcessor::makeBusesProperties() -> BusesProperties
     BusesProperties props;
     props = props.withOutput ("Main", juce::AudioChannelSet::stereo(), true);
     // Generic direct outs — any channel can route to any of these (grouping), so
-    // they're numbered, not per-voice. The user fills Out 1, Out 2... in order.
+    // they're numbered, not per-voice. Declared MONO: the voices are mono sources,
+    // and a mono bus is what makes hosts (LUNA) offer mono multi-out tracks. The
+    // host may still take a bus stereo (isBusesLayoutSupported allows it).
     for (int i = 0; i < DrumKit::kNumChannels; ++i)
         props = props.withOutput ("Out " + juce::String (i + 1),
-                                  juce::AudioChannelSet::stereo(), false);
+                                  juce::AudioChannelSet::mono(), false);
     return props;
 }
 
@@ -466,11 +468,14 @@ bool LMOneAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
     if (main != juce::AudioChannelSet::stereo() && main != juce::AudioChannelSet::mono())
         return false;
 
-    // Each direct out must be stereo or disabled (LUNA enables the ones it uses).
+    // Each direct out may be stereo, mono, or disabled (the host enables + sizes
+    // the ones it uses, so LUNA can add either mono or stereo multi-out tracks).
     for (int b = 1; b < layouts.outputBuses.size(); ++b)
     {
         const auto s = layouts.outputBuses.getUnchecked (b);
-        if (! s.isDisabled() && s != juce::AudioChannelSet::stereo())
+        if (! s.isDisabled()
+            && s != juce::AudioChannelSet::stereo()
+            && s != juce::AudioChannelSet::mono())
             return false;
     }
     return true;
