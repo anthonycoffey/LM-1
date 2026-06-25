@@ -466,11 +466,14 @@ bool LMOneAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
     if (main != juce::AudioChannelSet::stereo() && main != juce::AudioChannelSet::mono())
         return false;
 
-    // Each direct out must be stereo or disabled (LUNA enables the ones it uses).
+    // Each direct out may be stereo, mono, or disabled (the host enables + sizes
+    // the ones it uses, so LUNA can add either mono or stereo multi-out tracks).
     for (int b = 1; b < layouts.outputBuses.size(); ++b)
     {
         const auto s = layouts.outputBuses.getUnchecked (b);
-        if (! s.isDisabled() && s != juce::AudioChannelSet::stereo())
+        if (! s.isDisabled()
+            && s != juce::AudioChannelSet::stereo()
+            && s != juce::AudioChannelSet::mono())
             return false;
     }
     return true;

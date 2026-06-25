@@ -79,10 +79,13 @@ public:
         const int    srcEnd = juce::jmin (trimEnd, sample->getNumSamples());
         const float* src    = sample->getReadPointer (0);
 
-        // Equal-power pan: pan in [-1, 1].
+        // Equal-power pan: pan in [-1, 1]. On a mono bus pan is meaningless, so write
+        // the voice at unity to the single channel (avoids the +3 dB that summing an
+        // equal-power pan into one channel would add).
+        const bool  mono      = out.getNumChannels() < 2;
         const float angle     = (pan * 0.5f + 0.5f) * juce::MathConstants<float>::halfPi;
-        const float leftGain  = level * velocityGain * std::cos (angle);
-        const float rightGain = level * velocityGain * std::sin (angle);
+        const float leftGain  = mono ? level * velocityGain : level * velocityGain * std::cos (angle);
+        const float rightGain = mono ? 0.0f                 : level * velocityGain * std::sin (angle);
 
         float* outL = out.getWritePointer (0, startSample);
         float* outR = out.getNumChannels() > 1 ? out.getWritePointer (1, startSample) : outL;
