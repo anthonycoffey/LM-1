@@ -1,4 +1,4 @@
-# LM-1
+# nixie
 
 A software drum machine modeled on the **Linn LM-1**, built with JUCE 8 and
 targeting **Audio Units (AU)** so it runs natively in **Universal Audio LUNA** on
