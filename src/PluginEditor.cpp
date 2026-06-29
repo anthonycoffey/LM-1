@@ -1,17 +1,17 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-#if LMONE_HAS_BINARY_DATA
+#if NIXIE_HAS_BINARY_DATA
  #include "BinaryData.h"
 #endif
 
 //==============================================================================
-LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
+NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     : AudioProcessorEditor (&p), processor (p), grid (p), midiDrag (p)
 {
     setLookAndFeel (&lookAndFeel);
 
-   #if LMONE_HAS_BINARY_DATA
+   #if NIXIE_HAS_BINARY_DATA
     for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
         if (juce::String (BinaryData::originalFilenames[i]).equalsIgnoreCase ("wood.jpeg"))
         {
@@ -226,7 +226,7 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     nowPlayingLed.setFontHeight (10.0f);   // "GENRE - name" readout for the loaded slot
     addAndMakeVisible (nowPlayingLed);
 
-    for (int i = 0; i < LMOneAudioProcessor::kBankSlots; ++i)
+    for (int i = 0; i < NixieAudioProcessor::kBankSlots; ++i)
     {
         auto* b = new juce::TextButton (juce::String (i + 1));
         b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
@@ -256,14 +256,14 @@ LMOneAudioProcessorEditor::LMOneAudioProcessorEditor (LMOneAudioProcessor& p)
     setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 868 + kBottomLip + 12);
 }
 
-LMOneAudioProcessorEditor::~LMOneAudioProcessorEditor()
+NixieAudioProcessorEditor::~NixieAudioProcessorEditor()
 {
     setLookAndFeel (nullptr);
     stopTimer();
     processor.removeChangeListener (this);
 }
 
-void LMOneAudioProcessorEditor::changeListenerCallback (juce::ChangeBroadcaster*)
+void NixieAudioProcessorEditor::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     for (auto* s : strips)
         s->refreshSourceLabel();
@@ -273,7 +273,7 @@ void LMOneAudioProcessorEditor::changeListenerCallback (juce::ChangeBroadcaster*
     refreshBankUI();
 }
 
-void LMOneAudioProcessorEditor::timerCallback()
+void NixieAudioProcessorEditor::timerCallback()
 {
     const int step = processor.getCurrentStep();
     stepLed.setText (step < 0 ? juce::String ("--") : juce::String (step + 1));
@@ -288,11 +288,11 @@ void LMOneAudioProcessorEditor::timerCallback()
         grid.reloadFromProcessor();
 }
 
-void LMOneAudioProcessorEditor::exportMidiToFile()
+void NixieAudioProcessorEditor::exportMidiToFile()
 {
     midiChooser = std::make_unique<juce::FileChooser> (
         "Export pattern as MIDI",
-        juce::File::getSpecialLocation (juce::File::userMusicDirectory).getChildFile ("LM-1 pattern.mid"),
+        juce::File::getSpecialLocation (juce::File::userMusicDirectory).getChildFile ("Nixie pattern.mid"),
         "*.mid");
     midiChooser->launchAsync (
         juce::FileBrowserComponent::saveMode
@@ -313,7 +313,7 @@ void LMOneAudioProcessorEditor::exportMidiToFile()
         });
 }
 
-void LMOneAudioProcessorEditor::refreshBankUI()
+void NixieAudioProcessorEditor::refreshBankUI()
 {
     bankLed.setText (juce::String (processor.getCurrentBank() + 1));
 
@@ -340,7 +340,7 @@ void LMOneAudioProcessorEditor::refreshBankUI()
     saveButton.setEnabled (! processor.currentBankIsFactory());
 }
 
-void LMOneAudioProcessorEditor::gotoBank (int newBank)
+void NixieAudioProcessorEditor::gotoBank (int newBank)
 {
     processor.setCurrentBank (newBank);
 
@@ -357,26 +357,26 @@ void LMOneAudioProcessorEditor::gotoBank (int newBank)
     refreshBankUI();
 }
 
-void LMOneAudioProcessorEditor::refreshMeterRate()
+void NixieAudioProcessorEditor::refreshMeterRate()
 {
     meterBox.setSelectedId (TimeGrid::meterIndex (processor.getTsNum(), processor.getTsDen()) + 1,
                             juce::dontSendNotification);
     rateBox.setSelectedId (processor.getRate() + 1, juce::dontSendNotification);
 }
 
-void LMOneAudioProcessorEditor::refreshShuffleLeds()
+void NixieAudioProcessorEditor::refreshShuffleLeds()
 {
     shuffleLed.setText (ChoiceParam::name (processor.apvts.getParameter ("shuffle")));
     for (auto* s : strips)
         s->refreshShuffle();
 }
 
-void LMOneAudioProcessorEditor::savePresetDialog()
+void NixieAudioProcessorEditor::savePresetDialog()
 {
     presetChooser = std::make_unique<juce::FileChooser> (
         "Save preset",
-        PresetManager::getPresetDir().getChildFile ("My Preset.lm1preset"),
-        "*.lm1preset");
+        PresetManager::getPresetDir().getChildFile ("My Preset.nixiepreset"),
+        "*.nixiepreset");
     presetChooser->launchAsync (
         juce::FileBrowserComponent::saveMode
         | juce::FileBrowserComponent::canSelectFiles
@@ -389,10 +389,10 @@ void LMOneAudioProcessorEditor::savePresetDialog()
         });
 }
 
-void LMOneAudioProcessorEditor::loadPresetDialog()
+void NixieAudioProcessorEditor::loadPresetDialog()
 {
     presetChooser = std::make_unique<juce::FileChooser> (
-        "Load preset", PresetManager::getPresetDir(), "*.lm1preset");
+        "Load preset", PresetManager::getPresetDir(), "*.nixiepreset");
     presetChooser->launchAsync (
         juce::FileBrowserComponent::openMode
         | juce::FileBrowserComponent::canSelectFiles,
@@ -405,7 +405,7 @@ void LMOneAudioProcessorEditor::loadPresetDialog()
 }
 
 //==============================================================================
-void LMOneAudioProcessorEditor::paint (juce::Graphics& g)
+void NixieAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll (LMColours::faceplate);
 
@@ -441,10 +441,10 @@ void LMOneAudioProcessorEditor::paint (juce::Graphics& g)
     // Title.
     g.setColour (LMColours::orange);
     g.setFont (juce::FontOptions (20.0f, juce::Font::bold));
-    g.drawText ("LM-1", kCheek + kGap + 12, 8, 200, 26, juce::Justification::centredLeft);
+    g.drawText ("Nixie", kCheek + kGap + 12, 8, 200, 26, juce::Justification::centredLeft);
     g.setColour (juce::Colours::grey);
     g.setFont (juce::FontOptions (12.0f));
-    g.drawText ("12-channel drum machine inspired by the LM-1",
+    g.drawText ("12-channel drum machine inspired by the Linn LM-1",
                 kCheek + kGap + 92, 12, getWidth() - 2 * (kCheek + kGap) - 100, 18, juce::Justification::centredLeft);
 
     // Orange section frames with labels on the top border.
@@ -453,7 +453,7 @@ void LMOneAudioProcessorEditor::paint (juce::Graphics& g)
     drawSection (g, rSeq,     "SEQUENCER");
 }
 
-void LMOneAudioProcessorEditor::drawSection (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title)
+void NixieAudioProcessorEditor::drawSection (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title)
 {
     if (r.getWidth() < 24 || r.getHeight() < 24)
         return;
@@ -473,7 +473,7 @@ void LMOneAudioProcessorEditor::drawSection (juce::Graphics& g, juce::Rectangle<
     }
 }
 
-void LMOneAudioProcessorEditor::resized()
+void NixieAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds();
     area.removeFromLeft  (kCheek);                  // wood cheeks

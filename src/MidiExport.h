@@ -2,7 +2,7 @@
 
 #include <JuceHeader.h>
 #include "Pattern.h"
-#include "DrumKit.h"   // LMOne::kVoiceDefs (lane -> GM note)
+#include "DrumKit.h"   // Nixie::kVoiceDefs (lane -> GM note)
 
 //==============================================================================
 // Builds a Standard MIDI File from a Pattern: one track, GM drum channel (10),
@@ -27,7 +27,7 @@ namespace MidiExport
 
         for (int lane = 0; lane < numLanes; ++lane)
         {
-            const int note = LMOne::kVoiceDefs[(size_t) lane].midiNote;
+            const int note = Nixie::kVoiceDefs[(size_t) lane].midiNote;
             for (int step = 0; step < numSteps; ++step)
             {
                 const juce::uint8 v = p.vel[(size_t) lane][(size_t) step];

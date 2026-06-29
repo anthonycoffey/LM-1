@@ -14,7 +14,7 @@
 class StepGridComponent : public juce::Component
 {
 public:
-    explicit StepGridComponent (LMOneAudioProcessor&);
+    explicit StepGridComponent (NixieAudioProcessor&);
 
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -35,7 +35,7 @@ private:
     Cell cellAt (juce::Point<int>) const;
     void applyCell (int lane, int step, juce::uint8 velocity);
 
-    LMOneAudioProcessor& processor;
+    NixieAudioProcessor& processor;
     Pattern     pattern;             // local mirror
     int         playingStep = -1;
     juce::uint8 paintValue  = 100;   // value being painted during a drag

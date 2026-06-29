@@ -1,4 +1,4 @@
-# LM-1 — Roadmap & status
+# Nixie — Roadmap & status
 
 **What this is:** a **modern drum-machine instrument** (AU/VST3/Standalone) that
 sounds and looks like the Linn LM-1 but is built for a modern DAW workflow — a
@@ -9,7 +9,7 @@ and MIDI drag-out into the DAW.
 The originally planned scope is **shipped** (currently **v0.4.1**). This file now
 records what's done and what could still come; the per-release detail lives in
 [CHANGELOG.md](CHANGELOG.md). The deeper architecture rationale is in
-[LM-1_Clone_Design_and_Plan.md](LM-1_Clone_Design_and_Plan.md).
+[Nixie_Design_and_Plan.md](Nixie_Design_and_Plan.md).
 
 ---
 
@@ -36,7 +36,7 @@ records what's done and what could still come; the per-release detail lives in
   "GENRE - pattern name" readout.
 - ✅ **Multi-out (v0.4.0):** stereo Main + 12 direct outs; per-channel output
   selector so a voice or group can be processed on its own track in LUNA.
-- ✅ **Full-state presets:** `.lm1preset` save/load of the whole setup via the gear menu.
+- ✅ **Full-state presets:** `.nixiepreset` save/load of the whole setup via the gear menu.
 - ✅ **Character & styling:** wood cheeks, faceplate with `#fc5824` frames/labels,
   custom vintage knobs/faders/buttons, red LED readouts, global Master/Lo-Fi/Tune.
 
@@ -77,7 +77,7 @@ The Linn LM-1 (Roger Linn, 1980) — the first drum machine to use digital sampl
 - **Song / pattern chaining** — arrange banks into a song (currently you drive
   arrangement from the DAW via MIDI drag-out).
 - **Per-slot full state** — banks load pattern + tempo + meter; capturing mixer/kit
-  per slot is still deferred to `.lm1preset`.
+  per slot is still deferred to `.nixiepreset`.
 - **Code-sign (Developer ID) + notarize + staple** so it installs on other Macs
   without Gatekeeper warnings.
 - **Audio polish** — higher-quality interpolation, selectable companding curves,
@@ -97,9 +97,9 @@ The Linn LM-1 (Roger Linn, 1980) — the first drum machine to use digital sampl
 
 ## Working tips
 
-- **Iterate in the Standalone build** (`build/LM_One_artefacts/Release/Standalone/`) —
+- **Iterate in the Standalone build** (`build/Nixie_artefacts/Release/Standalone/`) —
   far faster than reopening LUNA. Fully quit + relaunch it to pick up a rebuild.
-- **Keep `auval` green** after changes (`auval -v aumu Lm01 Ynme`).
+- **Keep `auval` green** after changes (`auval -v aumu Nix1 Coff`).
 - **Never touch the audio thread carelessly:** no `new`/`delete`, locks, file, or GUI
   calls in `processBlock`; pass data in via atomics / the reference-counted kit swap.
 - **Reconfigure** (`cmake -B build -G Xcode`) after editing `CMakeLists.txt` or adding

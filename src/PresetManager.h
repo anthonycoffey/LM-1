@@ -5,7 +5,7 @@
 
 //==============================================================================
 // Saves/loads the full plugin state (params + kit + pattern bank) as
-// `.lm1preset` XML files under the user's app-data dir. Message-thread only.
+// `.nixiepreset` XML files under the user's app-data dir. Message-thread only.
 //
 // Sample references are stored by path (factory voices by name), so a preset
 // that points at a moved/missing user WAV falls back to the default for that
@@ -15,19 +15,19 @@
 class PresetManager
 {
 public:
-    explicit PresetManager (LMOneAudioProcessor& p) : processor (p) {}
+    explicit PresetManager (NixieAudioProcessor& p) : processor (p) {}
 
     static juce::File getPresetDir()
     {
         auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                       .getChildFile ("LM-1").getChildFile ("Presets");
+                       .getChildFile ("Nixie").getChildFile ("Presets");
         dir.createDirectory();
         return dir;
     }
 
     bool save (const juce::File& file) const
     {
-        const auto f = file.withFileExtension ("lm1preset");
+        const auto f = file.withFileExtension ("nixiepreset");
         if (auto xml = processor.captureStateTree().createXml())
             return xml->writeTo (f);
         return false;
@@ -45,9 +45,9 @@ public:
 
     juce::Array<juce::File> list() const
     {
-        return getPresetDir().findChildFiles (juce::File::findFiles, false, "*.lm1preset");
+        return getPresetDir().findChildFiles (juce::File::findFiles, false, "*.nixiepreset");
     }
 
 private:
-    LMOneAudioProcessor& processor;
+    NixieAudioProcessor& processor;
 };

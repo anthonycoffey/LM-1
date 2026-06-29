@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-// LM-1 visual language: dark faceplate, orange (#fc5824) accents, vintage
+// Nixie visual language: dark faceplate, orange (#fc5824) accents, vintage
 // vector-drawn knobs, faders and buttons. Set this on the editor and every
 // child control inherits it.
 //==============================================================================
@@ -18,10 +18,10 @@ namespace LMColours
     inline const juce::Colour wood2      { 0xff3d2613 };
 }
 
-class LMOneLookAndFeel : public juce::LookAndFeel_V4
+class NixieLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    LMOneLookAndFeel()
+    NixieLookAndFeel()
     {
         using namespace juce;
         setColour (Slider::textBoxTextColourId,       Colour (0xffff3322));   // LED red readout

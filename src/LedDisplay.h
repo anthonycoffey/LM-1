@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "LMOneLookAndFeel.h"
+#include "NixieLookAndFeel.h"
 
 //==============================================================================
 // A small red 7-segment LED readout (vintage LM-1 style). Right-aligns its text

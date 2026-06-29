@@ -1,6 +1,6 @@
 #include "VoiceStripComponent.h"
 
-VoiceStripComponent::VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIndex)
+VoiceStripComponent::VoiceStripComponent (NixieAudioProcessor& proc, int voiceIndex)
     : processor (proc), index (voiceIndex)
 {
     const auto& pad = processor.getPads()[(size_t) index];

@@ -6,23 +6,23 @@
 #include "StepGridComponent.h"
 #include "MidiDragSource.h"
 #include "PresetManager.h"
-#include "LMOneLookAndFeel.h"
+#include "NixieLookAndFeel.h"
 #include "LedDisplay.h"
 #include "TransportButton.h"
 #include "RetroWidgets.h"
 
 //==============================================================================
-// Editor: the full LM-1 panel — a 12-channel voice mixer (one strip per
+// Editor: the full Nixie panel — a 12-channel voice mixer (one strip per
 // instrument), the step-grid sequencer with transport + meter/rate selectors,
 // the bank / groove library, and the global Master / Lo-Fi / Tune / Shuffle.
 //==============================================================================
-class LMOneAudioProcessorEditor : public juce::AudioProcessorEditor,
+class NixieAudioProcessorEditor : public juce::AudioProcessorEditor,
                                   public juce::ChangeListener,
                                   public juce::Timer
 {
 public:
-    explicit LMOneAudioProcessorEditor (LMOneAudioProcessor&);
-    ~LMOneAudioProcessorEditor() override;
+    explicit NixieAudioProcessorEditor (NixieAudioProcessor&);
+    ~NixieAudioProcessorEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -42,8 +42,8 @@ private:
     void refreshShuffleLeds();    // push shuffle settings into the global + per-track LEDs
     void refreshMeterRate();      // sync the Meter / Rate selectors to the working pattern
 
-    LMOneAudioProcessor& processor;
-    LMOneLookAndFeel     lookAndFeel;
+    NixieAudioProcessor& processor;
+    NixieLookAndFeel     lookAndFeel;
     PresetManager        presetManager { processor };
 
     juce::OwnedArray<VoiceStripComponent> strips;
@@ -91,5 +91,5 @@ private:
     juce::Rectangle<int> rGlobals, rMixer, rSeq;
     static void drawSection (juce::Graphics&, juce::Rectangle<int>, const juce::String& title);
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LMOneAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NixieAudioProcessorEditor)
 };

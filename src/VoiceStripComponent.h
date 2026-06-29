@@ -83,7 +83,7 @@ public:
 class VoiceStripComponent : public juce::Component
 {
 public:
-    VoiceStripComponent (LMOneAudioProcessor& proc, int voiceIndex);
+    VoiceStripComponent (NixieAudioProcessor& proc, int voiceIndex);
 
     void resized() override;
     void paint (juce::Graphics&) override;
@@ -103,7 +103,7 @@ private:
     using ButtonAttachment   = juce::AudioProcessorValueTreeState::ButtonAttachment;
     using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
 
-    LMOneAudioProcessor& processor;
+    NixieAudioProcessor& processor;
     int index = 0;
     int midiNote = 0;
 

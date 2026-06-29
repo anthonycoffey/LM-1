@@ -1,7 +1,7 @@
 #include "DrumKit.h"
 #include "DrumSynth.h"
 
-#if LMONE_HAS_BINARY_KIT
+#if NIXIE_HAS_BINARY_KIT
  #include "BinaryData.h"
 #endif
 
@@ -9,7 +9,7 @@
 DrumKit::DrumKit()
 {
     for (int i = 0; i < kNumVoices; ++i)
-        voices[(size_t) i].name = LMOne::kVoiceDefs[(size_t) i].name;
+        voices[(size_t) i].name = Nixie::kVoiceDefs[(size_t) i].name;
 }
 
 //==============================================================================
@@ -69,7 +69,7 @@ namespace
         return true;
     }
 
-#if LMONE_HAS_BINARY_KIT
+#if NIXIE_HAS_BINARY_KIT
     // Lower-case, alphanumeric-only form of a string, for forgiving filename matching.
     juce::String normalize (const juce::String& s)
     {
@@ -130,7 +130,7 @@ DrumKit::Ptr KitFactory::buildFactoryKit (double proceduralRate)
 {
     DrumKit::Ptr kit = new DrumKit();
 
-   #if LMONE_HAS_BINARY_KIT
+   #if NIXIE_HAS_BINARY_KIT
     juce::AudioFormatManager fm;
     fm.registerBasicFormats();
    #endif
@@ -144,7 +144,7 @@ DrumKit::Ptr KitFactory::buildFactoryKit (double proceduralRate)
         vs.endSample   = -1;
 
         bool loaded = false;
-       #if LMONE_HAS_BINARY_KIT
+       #if NIXIE_HAS_BINARY_KIT
         loaded = loadVoiceFromBinary (vs, i, fm);
        #endif
 
@@ -198,7 +198,7 @@ bool KitFactory::restoreVoiceToFactory (DrumKit& kit, int voiceIndex, double pro
     vs.endSample   = -1;
 
     bool loaded = false;
-   #if LMONE_HAS_BINARY_KIT
+   #if NIXIE_HAS_BINARY_KIT
     juce::AudioFormatManager fm;
     fm.registerBasicFormats();
     loaded = loadVoiceFromBinary (vs, voiceIndex, fm);

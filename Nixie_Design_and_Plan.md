@@ -1,8 +1,8 @@
-# LM-1 Clone — Design Document & Project Plan
+# Nixie — Design Document & Project Plan
 
 A plan for building a software drum machine modeled on the **Linn LM-1 Drum Computer (1980)**, packaged as an instrument plugin that runs natively in **Universal Audio LUNA on macOS**.
 
-**Working name:** _LM-1_ (placeholder)
+**Name:** _Nixie_
 **Target fidelity:** Hybrid — authentic LM-1 workflow and lo-fi character, with user-loadable samples
 **Primary format:** Audio Unit (AU) instrument; VST3 added later from the same codebase
 
@@ -48,7 +48,7 @@ You were right that a "powerful language" is needed — plugin audio engines run
 
 ---
 
-## 2. What the LM-1 actually was (the spec we're cloning)
+## 2. What the LM-1 actually was (the spec we're emulating)
 
 | Aspect        | LM-1 hardware                                                                                                         | What we replicate                                           |
 | ------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -69,7 +69,7 @@ Sourcing note: the original 8-bit ROM samples are copyrighted and their provenan
 Standard JUCE plugin split: a real-time **processor** and a **UI editor**, plus supporting engine modules.
 
 ```
-LM-1 (JUCE Audio Plug-In)
+Nixie (JUCE Audio Plug-In)
 │
 ├── PluginProcessor  (audio thread — real-time safe)
 │   ├── VoiceEngine          12 sampler voices
@@ -123,7 +123,7 @@ Everything that moves uses JUCE's **AudioProcessorValueTreeState (APVTS)** so it
 
 ## 4. Feature set (MVP → later)
 
-**MVP (must-have for a usable LM-1 clone in LUNA)**
+**MVP (must-have for a usable Nixie in LUNA)**
 
 - 12 voices with bundled default samples
 - 16-step grid sequencer, host-tempo synced, with swing
