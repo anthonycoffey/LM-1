@@ -16,7 +16,7 @@ static float shuffleAmountForIndex (int idx) noexcept
 // Output buses: a main stereo mix + one stereo "direct out" per mixer channel,
 // named by voice so LUNA's multi-out mixer labels them clearly. The direct outs
 // are disabled by default (the host/LUNA enables the ones it routes).
-auto LMOneAudioProcessor::makeBusesProperties() -> BusesProperties
+auto NixieAudioProcessor::makeBusesProperties() -> BusesProperties
 {
     BusesProperties props;
     props = props.withOutput ("Main", juce::AudioChannelSet::stereo(), true);
@@ -31,16 +31,16 @@ auto LMOneAudioProcessor::makeBusesProperties() -> BusesProperties
 }
 
 //==============================================================================
-LMOneAudioProcessor::LMOneAudioProcessor()
+NixieAudioProcessor::NixieAudioProcessor()
     : AudioProcessor (makeBusesProperties()),
       apvts (*this, nullptr, "PARAMS", createParameterLayout())
 {
     // Build the 12 LM-1 pads from the canonical voice table.
     pads.reserve (DrumKit::kNumVoices);
     for (int i = 0; i < DrumKit::kNumVoices; ++i)
-        pads.push_back ({ juce::String (LMOne::kVoiceDefs[(size_t) i].name),
-                          LMOne::kVoiceDefs[(size_t) i].midiNote,
-                          LMOne::kVoiceDefs[(size_t) i].chokeGroup });
+        pads.push_back ({ juce::String (Nixie::kVoiceDefs[(size_t) i].name),
+                          Nixie::kVoiceDefs[(size_t) i].midiNote,
+                          Nixie::kVoiceDefs[(size_t) i].chokeGroup });
 
     voices.resize (pads.size());
 
@@ -78,7 +78,7 @@ LMOneAudioProcessor::LMOneAudioProcessor()
 
 //==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout
-LMOneAudioProcessor::createParameterLayout()
+NixieAudioProcessor::createParameterLayout()
 {
     using namespace juce;
     AudioProcessorValueTreeState::ParameterLayout layout;
@@ -112,7 +112,7 @@ LMOneAudioProcessor::createParameterLayout()
     for (int i = 0; i < DrumKit::kNumChannels; ++i)
     {
         const auto id = "v" + String (i);
-        const String n  = LMOne::kVoiceDefs[(size_t) i].name;
+        const String n  = Nixie::kVoiceDefs[(size_t) i].name;
 
         layout.add (std::make_unique<AudioParameterFloat> (
             ParameterID { id + "_level", 1 }, n + " Level",
@@ -152,7 +152,7 @@ LMOneAudioProcessor::createParameterLayout()
 }
 
 //==============================================================================
-void LMOneAudioProcessor::setKit (DrumKit::Ptr newKit)
+void NixieAudioProcessor::setKit (DrumKit::Ptr newKit)
 {
     // Reap previously-retired kits that no playing voice references anymore
     // (only the retired array holds them => refcount 1). Frees on this thread.
@@ -171,7 +171,7 @@ void LMOneAudioProcessor::setKit (DrumKit::Ptr newKit)
     sendChangeMessage(); // let the editor refresh per-voice sample labels
 }
 
-bool LMOneAudioProcessor::loadUserSample (int voiceIndex, const juce::File& file)
+bool NixieAudioProcessor::loadUserSample (int voiceIndex, const juce::File& file)
 {
     if (currentKit == nullptr)
         return false;
@@ -185,7 +185,7 @@ bool LMOneAudioProcessor::loadUserSample (int voiceIndex, const juce::File& file
     return true;
 }
 
-bool LMOneAudioProcessor::restoreVoiceToFactory (int voiceIndex)
+bool NixieAudioProcessor::restoreVoiceToFactory (int voiceIndex)
 {
     if (currentKit == nullptr)
         return false;
@@ -199,7 +199,7 @@ bool LMOneAudioProcessor::restoreVoiceToFactory (int voiceIndex)
     return true;
 }
 
-bool LMOneAudioProcessor::voiceHasUserSample (int voiceIndex) const
+bool NixieAudioProcessor::voiceHasUserSample (int voiceIndex) const
 {
     if (currentKit == nullptr || voiceIndex < 0 || voiceIndex >= DrumKit::kNumVoices)
         return false;
@@ -207,7 +207,7 @@ bool LMOneAudioProcessor::voiceHasUserSample (int voiceIndex) const
     return currentKit->voice (voiceIndex).sourceTag == "file";
 }
 
-juce::String LMOneAudioProcessor::getVoiceSourceLabel (int voiceIndex) const
+juce::String NixieAudioProcessor::getVoiceSourceLabel (int voiceIndex) const
 {
     if (currentKit == nullptr || voiceIndex < 0 || voiceIndex >= DrumKit::kNumVoices)
         return {};
@@ -220,7 +220,7 @@ juce::String LMOneAudioProcessor::getVoiceSourceLabel (int voiceIndex) const
 }
 
 //==============================================================================
-void LMOneAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
+void NixieAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
 {
     currentSampleRate = sampleRate;
 
@@ -236,14 +236,14 @@ void LMOneAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBloc
 }
 
 //==============================================================================
-void LMOneAudioProcessor::publishPattern (const Pattern& p)
+void NixieAudioProcessor::publishPattern (const Pattern& p)
 {
     const int next = 1 - patternState.live.load (std::memory_order_relaxed);
     patternState.slots[(size_t) next] = p;
     patternState.live.store (next, std::memory_order_release);
 }
 
-void LMOneAudioProcessor::pushRecordEvent (int lane, int step, juce::uint8 vel) noexcept
+void NixieAudioProcessor::pushRecordEvent (int lane, int step, juce::uint8 vel) noexcept
 {
     int start1, size1, start2, size2;
     recFifo.prepareToWrite (1, start1, size1, start2, size2);
@@ -252,7 +252,7 @@ void LMOneAudioProcessor::pushRecordEvent (int lane, int step, juce::uint8 vel) 
     recFifo.finishedWrite (size1 + size2);
 }
 
-bool LMOneAudioProcessor::pollRecordedNotes()
+bool NixieAudioProcessor::pollRecordedNotes()
 {
     const int ready = recFifo.getNumReady();
     if (ready <= 0)
@@ -279,7 +279,7 @@ bool LMOneAudioProcessor::pollRecordedNotes()
     return true;
 }
 
-void LMOneAudioProcessor::setStep (int lane, int step, juce::uint8 velocity)
+void NixieAudioProcessor::setStep (int lane, int step, juce::uint8 velocity)
 {
     if (lane < 0 || lane >= Pattern::kMaxLanes || step < 0 || step >= Pattern::kMaxSteps)
         return;
@@ -288,13 +288,13 @@ void LMOneAudioProcessor::setStep (int lane, int step, juce::uint8 velocity)
     publishPattern (workingPattern);
 }
 
-void LMOneAudioProcessor::setPatternMeter (int num, int den, int rate)
+void NixieAudioProcessor::setPatternMeter (int num, int den, int rate)
 {
     workingPattern.setMeter (num, den, rate);   // sets time sig + rate, recomputes numSteps
     publishPattern (workingPattern);
 }
 
-void LMOneAudioProcessor::clearPattern()
+void NixieAudioProcessor::clearPattern()
 {
     const int keepSteps = workingPattern.numSteps;
     workingPattern.clear();
@@ -305,17 +305,17 @@ void LMOneAudioProcessor::clearPattern()
 }
 
 //==============================================================================
-void LMOneAudioProcessor::setCurrentBank (int bank)
+void NixieAudioProcessor::setCurrentBank (int bank)
 {
     currentBank = juce::jlimit (0, kNumBanks - 1, bank);
 }
 
-void LMOneAudioProcessor::setCurrentSlot (int slot) noexcept
+void NixieAudioProcessor::setCurrentSlot (int slot) noexcept
 {
     currentSlot = juce::jlimit (-1, kBankSlots - 1, slot);
 }
 
-void LMOneAudioProcessor::loadSlot (int slot)
+void NixieAudioProcessor::loadSlot (int slot)
 {
     if (slot < 0 || slot >= kBankSlots) return;
 
@@ -342,7 +342,7 @@ void LMOneAudioProcessor::loadSlot (int slot)
     }
 }
 
-void LMOneAudioProcessor::saveSlot (int slot)
+void NixieAudioProcessor::saveSlot (int slot)
 {
     if (slot < 0 || slot >= kBankSlots || currentBank < kNumFactoryBanks)
         return;   // factory banks are read-only
@@ -368,25 +368,25 @@ void LMOneAudioProcessor::saveSlot (int slot)
     saveUserLibrary();
 }
 
-bool LMOneAudioProcessor::slotFilled (int slot) const
+bool NixieAudioProcessor::slotFilled (int slot) const
 {
     return slot >= 0 && slot < kBankSlots && library[(size_t) currentBank][(size_t) slot].filled;
 }
 
-juce::String LMOneAudioProcessor::slotName (int slot) const
+juce::String NixieAudioProcessor::slotName (int slot) const
 {
     return (slot >= 0 && slot < kBankSlots) ? library[(size_t) currentBank][(size_t) slot].name
                                             : juce::String();
 }
 
-juce::String LMOneAudioProcessor::slotGenre (int slot) const
+juce::String NixieAudioProcessor::slotGenre (int slot) const
 {
     return (slot >= 0 && slot < kBankSlots) ? library[(size_t) currentBank][(size_t) slot].genre
                                             : juce::String();
 }
 
 //==============================================================================
-void LMOneAudioProcessor::loadFactoryLibrary()
+void NixieAudioProcessor::loadFactoryLibrary()
 {
     const auto banks = FactoryGrooves::build();   // 10 genre banks x 10
     for (int bk = 0; bk < (int) banks.size() && bk < kNumBanks; ++bk)
@@ -402,15 +402,15 @@ void LMOneAudioProcessor::loadFactoryLibrary()
         }
 }
 
-juce::File LMOneAudioProcessor::userLibraryFile()
+juce::File NixieAudioProcessor::userLibraryFile()
 {
     auto dir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                   .getChildFile ("LM-1");
+                   .getChildFile ("Nixie");
     dir.createDirectory();
     return dir.getChildFile ("UserBanks.xml");
 }
 
-void LMOneAudioProcessor::loadUserLibrary()
+void NixieAudioProcessor::loadUserLibrary()
 {
     const auto f = userLibraryFile();
     if (! f.existsAsFile()) return;
@@ -439,7 +439,7 @@ void LMOneAudioProcessor::loadUserLibrary()
     }
 }
 
-void LMOneAudioProcessor::saveUserLibrary() const
+void NixieAudioProcessor::saveUserLibrary() const
 {
     juce::ValueTree root ("USERBANKS");
     for (int bk = kNumFactoryBanks; bk < kNumBanks; ++bk)
@@ -461,7 +461,7 @@ void LMOneAudioProcessor::saveUserLibrary() const
         xml->writeTo (userLibraryFile());
 }
 
-bool LMOneAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool NixieAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     // Main out must be stereo or mono.
     const auto main = layouts.getMainOutputChannelSet();
@@ -482,7 +482,7 @@ bool LMOneAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 }
 
 //==============================================================================
-void LMOneAudioProcessor::triggerPad (int padIndex, float velocity, DrumKit* kit)
+void NixieAudioProcessor::triggerPad (int padIndex, float velocity, DrumKit* kit)
 {
     if (kit == nullptr || padIndex < 0 || padIndex >= (int) voices.size())
         return;
@@ -500,14 +500,14 @@ void LMOneAudioProcessor::triggerPad (int padIndex, float velocity, DrumKit* kit
     voices[(size_t) padIndex].trigger (velocity, voiceTune);
 }
 
-float LMOneAudioProcessor::applyCrush (float s, int bits, float mix)
+float NixieAudioProcessor::applyCrush (float s, int bits, float mix)
 {
     const float steps = (float) (1 << bits);
     const float crushed = std::round (s * steps) / steps;
     return s + mix * (crushed - s);
 }
 
-void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
+void NixieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                         juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -692,12 +692,12 @@ void LMOneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
-juce::AudioProcessorEditor* LMOneAudioProcessor::createEditor()
+juce::AudioProcessorEditor* NixieAudioProcessor::createEditor()
 {
-    return new LMOneAudioProcessorEditor (*this);
+    return new NixieAudioProcessorEditor (*this);
 }
 
-juce::ValueTree LMOneAudioProcessor::captureStateTree()
+juce::ValueTree NixieAudioProcessor::captureStateTree()
 {
     auto state = apvts.copyState();   // type "PARAMS" (params + globals)
 
@@ -736,13 +736,13 @@ juce::ValueTree LMOneAudioProcessor::captureStateTree()
     return state;
 }
 
-void LMOneAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void NixieAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     if (auto xml = captureStateTree().createXml())
         copyXmlToBinary (*xml, destData);
 }
 
-void LMOneAudioProcessor::restoreStateTree (const juce::ValueTree& tree)
+void NixieAudioProcessor::restoreStateTree (const juce::ValueTree& tree)
 {
     if (! tree.isValid() || ! tree.hasType (apvts.state.getType()))
         return;
@@ -801,7 +801,7 @@ void LMOneAudioProcessor::restoreStateTree (const juce::ValueTree& tree)
     sendChangeMessage(); // refresh the editor (grid + sample labels) after a restore
 }
 
-void LMOneAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void NixieAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         restoreStateTree (juce::ValueTree::fromXml (*xml));
@@ -811,5 +811,5 @@ void LMOneAudioProcessor::setStateInformation (const void* data, int sizeInBytes
 // This creates new instances of the plugin.
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new LMOneAudioProcessor();
+    return new NixieAudioProcessor();
 }

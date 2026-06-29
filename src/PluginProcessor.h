@@ -7,14 +7,14 @@
 #include "Sequencer.h"
 
 //==============================================================================
-// LM-1 — drum-machine instrument (AU / VST3 / Standalone).
+// Nixie — drum-machine instrument (AU / VST3 / Standalone).
 //
 // A MIDI-playable sampler with 12 authentic LM-1 voices (reference-counted
 // DrumKit), a per-voice mixer with AU multi-out, a host-synced step sequencer
 // with meter/rate time grids, a 12-bank groove library, and a global lo-fi
 // "crush" stage. See README.md for the full feature set.
 //==============================================================================
-class LMOneAudioProcessor : public juce::AudioProcessor,
+class NixieAudioProcessor : public juce::AudioProcessor,
                             public juce::ChangeBroadcaster
 {
 public:
@@ -28,8 +28,8 @@ public:
         int chokeGroup;     // -1 = none
     };
 
-    LMOneAudioProcessor();
-    ~LMOneAudioProcessor() override = default;
+    NixieAudioProcessor();
+    ~NixieAudioProcessor() override = default;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -41,7 +41,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "LM-1"; }
+    const juce::String getName() const override { return "Nixie"; }
     bool acceptsMidi() const override  { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -69,7 +69,7 @@ public:
     {
         if (channel == DrumKit::kHiHatChannel) return "Hi-hats";
         return (channel >= 0 && channel < DrumKit::kNumVoices)
-                   ? juce::String (LMOne::kVoiceDefs[(size_t) channel].name) : juce::String();
+                   ? juce::String (Nixie::kVoiceDefs[(size_t) channel].name) : juce::String();
     }
 
     // Load a user WAV/AIFF into one voice (message thread). Copy-on-write swap;
@@ -234,5 +234,5 @@ private:
 
     void publishPattern (const Pattern& p);             // message thread
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LMOneAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NixieAudioProcessor)
 };

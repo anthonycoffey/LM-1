@@ -1,4 +1,4 @@
-# nixie
+# Nixie
 
 A software drum machine modeled on the **Linn LM-1**, built with JUCE 8 and
 targeting **Audio Units (AU)** so it runs natively in **Universal Audio LUNA** on
@@ -71,35 +71,35 @@ cmake --build build --config Release
 `COPY_PLUGIN_AFTER_BUILD TRUE` installs the plugin into your user folders on a
 successful build:
 
-- AU: `~/Library/Audio/Plug-Ins/Components/LM-1.component`
-- VST3: `~/Library/Audio/Plug-Ins/VST3/LM-1.vst3`
+- AU: `~/Library/Audio/Plug-Ins/Components/Nixie.component`
+- VST3: `~/Library/Audio/Plug-Ins/VST3/Nixie.vst3`
 
 ## Validate the AU (do this before opening LUNA)
 
 ```bash
-auval -v aumu Lm01 Ynme
+auval -v aumu Nix1 Coff
 ```
 
-`aumu` = music device (instrument); `Lm01` / `Ynme` are the `PLUGIN_CODE` and
+`aumu` = music device (instrument); `Nix1` / `Coff` are the `PLUGIN_CODE` and
 `PLUGIN_MANUFACTURER_CODE` from `CMakeLists.txt`. A clean pass means hosts will load it.
 
 ## Run it
 
 - **Fastest iteration:** the **Standalone** app
-  (`build/LM_One_artefacts/Release/Standalone/`). Fully quit + relaunch it to pick
+  (`build/Nixie_artefacts/Release/Standalone/`). Fully quit + relaunch it to pick
   up a rebuild (it caches).
-- **In LUNA:** add an Instrument track and insert **LM-1**. For multi-out, set
+- **In LUNA:** add an Instrument track and insert **Nixie**. For multi-out, set
   channels to **Out 1 / Out 2 / …** in the mixer, then add those outputs in LUNA's
   multi-out mixer (or right-click the track → Add Multi-Output) and process them.
 
 ## Project layout
 
 ```
-LM-1/
+Nixie/
 ├── CMakeLists.txt              # build config: pulls JUCE, defines the plugin + buses
 ├── README.md                   # this file
 ├── ROADMAP.md                  # build history + possible future work
-├── LM-1_Clone_Design_and_Plan.md  # original architecture/design reference
+├── Nixie_Design_and_Plan.md  # original architecture/design reference
 ├── CHANGELOG.md                # release notes per version
 ├── assets/factory_kit/         # drop 12 WAVs here to bundle a factory kit
 └── src/
@@ -115,12 +115,12 @@ LM-1/
     ├── VoiceStripComponent.*   # one mixer strip (pad, sample slot, fader, knobs, out)
     ├── StepGridComponent.*     # the step grid
     ├── RetroWidgets.h          # LED text, step arrows, X button
-    ├── LMOneLookAndFeel.h      # vintage knobs/faders/buttons
+    ├── NixieLookAndFeel.h      # vintage knobs/faders/buttons
     ├── LedDisplay.h            # 7-segment LED readouts
     ├── TransportButton.h       # flat Play / Rec buttons with LEDs
     ├── MidiDragSource.h        # drag-pattern-to-DAW handle
     ├── MidiExport.h            # pattern → .mid builder
-    └── PresetManager.h         # full-state .lm1preset save/load
+    └── PresetManager.h         # full-state .nixiepreset save/load
 ```
 
 ## Before sharing the plugin

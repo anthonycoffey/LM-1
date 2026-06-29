@@ -1,5 +1,5 @@
 #include "StepGridComponent.h"
-#include "LMOneLookAndFeel.h"
+#include "NixieLookAndFeel.h"
 
 namespace
 {
@@ -10,7 +10,7 @@ namespace
     int laneForRow (int row) { return (row >= 0 && row < 13) ? kRowToLane[row] : row; }
 }
 
-StepGridComponent::StepGridComponent (LMOneAudioProcessor& p)
+StepGridComponent::StepGridComponent (NixieAudioProcessor& p)
     : processor (p)
 {
     reloadFromProcessor();

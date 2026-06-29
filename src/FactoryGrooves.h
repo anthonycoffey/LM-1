@@ -18,7 +18,7 @@
 // Triplet/compound grids are 12 steps grouped 3+3+3+3 (beats on 0,3,6,9); the
 // shuffle ride "x.xx.xx.xx.x" hits the downbeat + swung upbeat of each beat.
 //
-// Lane indices match LMOne::kVoiceDefs (0 Bass .. 11 Clap, 12 Open Hat).
+// Lane indices match Nixie::kVoiceDefs (0 Bass .. 11 Clap, 12 Open Hat).
 //==============================================================================
 namespace FactoryGrooves
 {

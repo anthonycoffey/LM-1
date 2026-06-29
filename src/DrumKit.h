@@ -10,7 +10,7 @@
 //   triggered (mono behaviour). Hi-Hat is its own group so it stays monophonic
 //   and is ready to host a closed/open pair later.
 //==============================================================================
-namespace LMOne
+namespace Nixie
 {
     struct VoiceDef { const char* name; int midiNote; int chokeGroup; };
 

@@ -12,7 +12,7 @@
 class MidiDragSource : public juce::Component
 {
 public:
-    explicit MidiDragSource (LMOneAudioProcessor& p) : processor (p)
+    explicit MidiDragSource (NixieAudioProcessor& p) : processor (p)
     {
         setMouseCursor (juce::MouseCursor::DraggingHandCursor);
     }
@@ -48,7 +48,7 @@ public:
 
         const auto mf  = MidiExport::build (processor.getPattern(), (double) processor.getSeqTempo());
         const auto tmp = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                             .getChildFile ("LM-1-" + juce::String (juce::Time::getMillisecondCounter())
+                             .getChildFile ("Nixie-" + juce::String (juce::Time::getMillisecondCounter())
                                             + ".mid");
 
         bool ok = false;
@@ -76,7 +76,7 @@ public:
     }
 
 private:
-    LMOneAudioProcessor& processor;
+    NixieAudioProcessor& processor;
     bool dragging = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiDragSource)

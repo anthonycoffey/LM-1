@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to LM-1. Versions follow the `CMakeLists.txt` project version
+All notable changes to Nixie. Versions follow the `CMakeLists.txt` project version
 and the git tags (`vX.Y.Z`).
 
 ## [0.4.2] - 2026-06-24
@@ -48,7 +48,7 @@ and the git tags (`vX.Y.Z`).
   Hard, per-track Follow).
 - **Preset library**: 10 banks × 10 slots with bank navigation; factory grooves +
   user-saveable banks persisted to disk.
-- Preset persistence across editor reopen / project reload; `.lm1preset` save/load.
+- Preset persistence across editor reopen / project reload; `.nixiepreset` save/load.
 
 ### Changed
 - Major UI overhaul: vintage faceplate, LED readouts, custom flat knobs/faders/
@@ -56,12 +56,12 @@ and the git tags (`vX.Y.Z`).
 
 ## [0.2.0] - 2026-06-23
 
-First tagged release — a playable AU/VST3/Standalone LM-1: 12 voices, per-voice
+First tagged release — a playable AU/VST3/Standalone Nixie: 12 voices, per-voice
 sampling, host-synced step sequencer + grid, per-voice mixer, MIDI export
 (file + drag-out), and global Master / Lo-Fi / Tune.
 
-[0.4.2]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.4.2
-[0.4.1]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.4.1
-[0.4.0]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.4.0
-[0.3.0]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.3.0
-[0.2.0]: https://github.com/anthonycoffey/LM-1/releases/tag/v0.2.0
+[0.4.2]: https://github.com/anthonycoffey/nixie/releases/tag/v0.4.2
+[0.4.1]: https://github.com/anthonycoffey/nixie/releases/tag/v0.4.1
+[0.4.0]: https://github.com/anthonycoffey/nixie/releases/tag/v0.4.0
+[0.3.0]: https://github.com/anthonycoffey/nixie/releases/tag/v0.3.0
+[0.2.0]: https://github.com/anthonycoffey/nixie/releases/tag/v0.2.0
