@@ -3,6 +3,22 @@
 All notable changes to Nixie. Versions follow the `CMakeLists.txt` project version
 and the git tags (`vX.Y.Z`).
 
+## [0.5.1] - 2026-06-29
+
+### Added
+- **Character strip** — a global master signal chain you can drive the whole kit
+  through: **Drive** (soft tanh saturation), **Filter** (resonant ladder LP/HP with a
+  **Reso** control), **Punch** (transient shaper — **Attack** + **Sustain**), and
+  **Glue** (bus compressor with auto makeup). Presented as a new "CHARACTER" knob row;
+  every control defaults to neutral, so it's transparent (and free of CPU) until used.
+
+### Changed
+- **Cubic (Catmull-Rom) sample interpolation** replaces linear — cleaner pitched/tuned
+  playback with less aliasing and zipper on transients.
+- **Cross-platform release builds:** the release workflow now builds **Windows** (VST3 +
+  Standalone) alongside **macOS** (AU + VST3 + Standalone) via a macOS + Windows matrix,
+  publishing platform-labeled binaries to each release.
+
 ## [0.5.0] - 2026-06-29
 
 ### Changed
@@ -73,6 +89,7 @@ First tagged release — a playable AU/VST3/Standalone Nixie: 12 voices, per-voi
 sampling, host-synced step sequencer + grid, per-voice mixer, MIDI export
 (file + drag-out), and global Master / Lo-Fi / Tune.
 
+[0.5.1]: https://github.com/anthonycoffey/nixie/releases/tag/v0.5.1
 [0.5.0]: https://github.com/anthonycoffey/nixie/releases/tag/v0.5.0
 [0.4.2]: https://github.com/anthonycoffey/nixie/releases/tag/v0.4.2
 [0.4.1]: https://github.com/anthonycoffey/nixie/releases/tag/v0.4.1

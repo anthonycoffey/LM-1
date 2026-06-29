@@ -169,9 +169,24 @@ private:
     float  srrHoldL = 0.0f, srrHoldR = 0.0f;
     double srrPhase = 0.0;
 
+    // Character strip (global, on the Main bus): Punch -> Filter -> Drive -> Glue.
+    juce::dsp::LadderFilter<float> charFilter;   // resonant LP/HP "Filter"
+    juce::dsp::Compressor<float>   charGlue;      // bus "Glue" compressor
+    float  punchFast[2] { 0.0f, 0.0f };          // transient-shaper envelope state
+    float  punchSlow[2] { 0.0f, 0.0f };
+
     std::atomic<float>* masterGainDb = nullptr;
     std::atomic<float>* lofiAmount   = nullptr;
     std::atomic<float>* globalTune   = nullptr;
+
+    // Character-strip parameters (read on the audio thread).
+    std::atomic<float>* driveAmt = nullptr;   // 0..1    saturation
+    std::atomic<float>* filtFreq = nullptr;   // 20..20k Hz
+    std::atomic<float>* filtReso = nullptr;   // 0..1
+    std::atomic<float>* filtMode = nullptr;   // 0 = LP, 1 = HP
+    std::atomic<float>* punchAtt = nullptr;   // -1..1
+    std::atomic<float>* punchSus = nullptr;   // -1..1
+    std::atomic<float>* glueAmt  = nullptr;   // 0..1
 
     // Cached per-voice mixer parameter pointers (read on the audio thread).
     struct VoiceParams

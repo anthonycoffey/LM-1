@@ -75,12 +75,18 @@ private:
     juce::Slider masterSlider, lofiSlider, tuneSlider;
     juce::Label  masterLabel,  lofiLabel,  tuneLabel,  shuffleLabel;
 
+    // Character strip: Drive / Filter (cutoff) / Reso / Attack / Sustain / Glue.
+    juce::Slider driveSlider, filterSlider, resoSlider, attackSlider, sustainSlider, glueSlider;
+    juce::Label  driveLabel,  filterLabel,  resoLabel,  attackLabel,  sustainLabel,  glueLabel;
+
     // Global shuffle: < > steppers + LED readout (no knob), matching the strips.
     StepArrow shufPrev { true,  LMColours::orange };
     StepArrow shufNext { false, LMColours::orange };
     LedText   shuffleLed;
 
     std::unique_ptr<SliderAttachment> masterAttach, lofiAttach, tuneAttach;
+    std::unique_ptr<SliderAttachment> driveAttach, filterAttach, resoAttach,
+                                      attackAttach, sustainAttach, glueAttach;
 
     // Styling: wood side cheeks + orange section frames.
     static constexpr int kCheek = 52;       // thicker wood cheeks
@@ -88,7 +94,7 @@ private:
     static constexpr int kGap = 12;         // breathing room between the wood and the content
     static constexpr int kLabelStrip = 14;
     juce::Image          woodImage;
-    juce::Rectangle<int> rGlobals, rMixer, rSeq;
+    juce::Rectangle<int> rGlobals, rCharacter, rMixer, rSeq;
     static void drawSection (juce::Graphics&, juce::Rectangle<int>, const juce::String& title);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NixieAudioProcessorEditor)

@@ -50,6 +50,13 @@ NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     setupSlider (lofiSlider,    lofiLabel,    "Lo-Fi");
     setupSlider (tuneSlider,    tuneLabel,    "Tune");
 
+    setupSlider (driveSlider,   driveLabel,   "Drive");
+    setupSlider (filterSlider,  filterLabel,  "Filter");
+    setupSlider (resoSlider,    resoLabel,    "Reso");
+    setupSlider (attackSlider,  attackLabel,  "Attack");
+    setupSlider (sustainSlider, sustainLabel, "Sustain");
+    setupSlider (glueSlider,    glueLabel,    "Glue");
+
     // Global shuffle: label + < > steppers + LED readout (no knob).
     shuffleLabel.setText ("Shuffle", juce::dontSendNotification);
     shuffleLabel.setJustificationType (juce::Justification::centred);
@@ -71,6 +78,13 @@ NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     lofiAttach    = std::make_unique<SliderAttachment> (processor.apvts, "lofi",       lofiSlider);
     tuneAttach    = std::make_unique<SliderAttachment> (processor.apvts, "tune",       tuneSlider);
 
+    driveAttach   = std::make_unique<SliderAttachment> (processor.apvts, "drive",    driveSlider);
+    filterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "filtFreq", filterSlider);
+    resoAttach    = std::make_unique<SliderAttachment> (processor.apvts, "filtReso", resoSlider);
+    attackAttach  = std::make_unique<SliderAttachment> (processor.apvts, "punchAtt", attackSlider);
+    sustainAttach = std::make_unique<SliderAttachment> (processor.apvts, "punchSus", sustainSlider);
+    glueAttach    = std::make_unique<SliderAttachment> (processor.apvts, "glue",     glueSlider);
+
     // Double-click any global knob to reset it to its default value.
     auto setReset = [this] (juce::Slider& s, const juce::String& id)
     {
@@ -80,6 +94,13 @@ NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     setReset (masterSlider, "masterGain");
     setReset (lofiSlider,   "lofi");
     setReset (tuneSlider,   "tune");
+
+    setReset (driveSlider,   "drive");
+    setReset (filterSlider,  "filtFreq");
+    setReset (resoSlider,    "filtReso");
+    setReset (attackSlider,  "punchAtt");
+    setReset (sustainSlider, "punchSus");
+    setReset (glueSlider,    "glue");
 
     // --- Transport bar -------------------------------------------------------
     // PLAY toggles the internal clock; the lamp (not the label/colour) shows state.
@@ -253,7 +274,7 @@ NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 868 + kBottomLip + 12);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 868 + 94 + kBottomLip + 12);
 }
 
 NixieAudioProcessorEditor::~NixieAudioProcessorEditor()
@@ -448,9 +469,10 @@ void NixieAudioProcessorEditor::paint (juce::Graphics& g)
                 kCheek + kGap + 92, 12, getWidth() - 2 * (kCheek + kGap) - 100, 18, juce::Justification::centredLeft);
 
     // Orange section frames with labels on the top border.
-    drawSection (g, rGlobals, "GLOBAL");
-    drawSection (g, rMixer,   "MIXER");
-    drawSection (g, rSeq,     "SEQUENCER");
+    drawSection (g, rGlobals,   "GLOBAL");
+    drawSection (g, rCharacter, "CHARACTER");
+    drawSection (g, rMixer,     "MIXER");
+    drawSection (g, rSeq,       "SEQUENCER");
 }
 
 void NixieAudioProcessorEditor::drawSection (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title)
@@ -509,6 +531,27 @@ void NixieAudioProcessorEditor::resized()
             shufPrev.setBounds (arrows.removeFromLeft (27));
             shufNext.setBounds (arrows);
         }
+    }
+
+    // CHARACTER — Drive / Filter / Reso / Attack / Sustain / Glue (one knob each).
+    rCharacter = area.removeFromTop (94);
+    {
+        auto g = rCharacter;
+        g.removeFromTop (kLabelStrip);
+        g = g.reduced (12, 6);
+        const int kW = 92;
+        auto place = [&] (juce::Slider& s, juce::Label& lab)
+        {
+            auto cell = g.removeFromLeft (kW);
+            lab.setBounds (cell.removeFromTop (16));
+            s.setBounds (cell);
+        };
+        place (driveSlider,   driveLabel);
+        place (filterSlider,  filterLabel);
+        place (resoSlider,    resoLabel);
+        place (attackSlider,  attackLabel);
+        place (sustainSlider, sustainLabel);
+        place (glueSlider,    glueLabel);
     }
 
     // SEQUENCER — transport controls + pattern slots + step grid, all together.
