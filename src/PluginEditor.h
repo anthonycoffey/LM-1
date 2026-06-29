@@ -94,7 +94,7 @@ private:
     static constexpr int kGap = 12;         // breathing room between the wood and the content
     static constexpr int kLabelStrip = 14;
     juce::Image          woodImage;
-    juce::Rectangle<int> rGlobals, rCharacter, rMixer, rSeq;
+    juce::Rectangle<int> rGlobals, rMixer, rSeq;
     static void drawSection (juce::Graphics&, juce::Rectangle<int>, const juce::String& title);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NixieAudioProcessorEditor)

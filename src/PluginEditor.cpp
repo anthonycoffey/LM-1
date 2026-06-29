@@ -274,7 +274,7 @@ NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     startTimerHz (20);                  // step readout + playhead
 
     const int stripW = 74;
-    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 868 + 94 + kBottomLip + 12);
+    setSize (stripW * DrumKit::kNumChannels + 20 + 2 * kCheek + 2 * kGap, 868 + kBottomLip + 12);
 }
 
 NixieAudioProcessorEditor::~NixieAudioProcessorEditor()
@@ -469,10 +469,9 @@ void NixieAudioProcessorEditor::paint (juce::Graphics& g)
                 kCheek + kGap + 92, 12, getWidth() - 2 * (kCheek + kGap) - 100, 18, juce::Justification::centredLeft);
 
     // Orange section frames with labels on the top border.
-    drawSection (g, rGlobals,   "GLOBAL");
-    drawSection (g, rCharacter, "CHARACTER");
-    drawSection (g, rMixer,     "MIXER");
-    drawSection (g, rSeq,       "SEQUENCER");
+    drawSection (g, rGlobals, "GLOBAL");
+    drawSection (g, rMixer,   "MIXER");
+    drawSection (g, rSeq,     "SEQUENCER");
 }
 
 void NixieAudioProcessorEditor::drawSection (juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title)
@@ -511,7 +510,7 @@ void NixieAudioProcessorEditor::resized()
         auto g = rGlobals;
         g.removeFromTop (kLabelStrip);              // room for the section label
         g = g.reduced (12, 6);
-        const int kW = 92;
+        const int kW = g.getWidth() / 10;          // 9 knobs + the shuffle stepper
         auto place = [&] (juce::Slider& s, juce::Label& lab)
         {
             auto cell = g.removeFromLeft (kW);
@@ -521,6 +520,12 @@ void NixieAudioProcessorEditor::resized()
         place (masterSlider,  masterLabel);
         place (lofiSlider,    lofiLabel);
         place (tuneSlider,    tuneLabel);
+        place (driveSlider,   driveLabel);
+        place (filterSlider,  filterLabel);
+        place (resoSlider,    resoLabel);
+        place (attackSlider,  attackLabel);
+        place (sustainSlider, sustainLabel);
+        place (glueSlider,    glueLabel);
         {
             // Shuffle cell: label, < > steppers, then the LED value below them —
             // matching the value-below-control layout of the other global fields.
@@ -533,26 +538,7 @@ void NixieAudioProcessorEditor::resized()
         }
     }
 
-    // CHARACTER — Drive / Filter / Reso / Attack / Sustain / Glue (one knob each).
-    rCharacter = area.removeFromTop (94);
-    {
-        auto g = rCharacter;
-        g.removeFromTop (kLabelStrip);
-        g = g.reduced (12, 6);
-        const int kW = 92;
-        auto place = [&] (juce::Slider& s, juce::Label& lab)
-        {
-            auto cell = g.removeFromLeft (kW);
-            lab.setBounds (cell.removeFromTop (16));
-            s.setBounds (cell);
-        };
-        place (driveSlider,   driveLabel);
-        place (filterSlider,  filterLabel);
-        place (resoSlider,    resoLabel);
-        place (attackSlider,  attackLabel);
-        place (sustainSlider, sustainLabel);
-        place (glueSlider,    glueLabel);
-    }
+    // (Character knobs — Drive/Filter/Reso/Attack/Sustain/Glue — share the GLOBAL row.)
 
     // SEQUENCER — transport controls + pattern slots + step grid, all together.
     rSeq = area.removeFromBottom (kLabelStrip + 44 + 28 + 256);   // grid +30 for the LED/number header
