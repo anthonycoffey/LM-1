@@ -10,6 +10,9 @@ a programmable step grid with real time signatures and triplet/shuffle subdivisi
 a 100-pattern genre groove library, a per-voice mixer with per-channel multi-out,
 the signature lo-fi character, and MIDI drag-out into your DAW.
 
+<img width="1076" height="838" alt="image" src="https://github.com/user-attachments/assets/92ac05e5-7948-459e-8c82-c0d256648ae4" />
+
+
 ## Features
 
 - **Formats:** AU + VST3 + Standalone from one CMake/JUCE project; passes `auval`.
