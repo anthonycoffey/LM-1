@@ -5,7 +5,8 @@
 
 //==============================================================================
 // A single drum voice: plays one mono sample buffer back at a variable rate
-// (for tuning) with linear interpolation, equal-power pan and per-hit gain.
+// (for tuning) with 4-point Catmull-Rom interpolation, equal-power pan and
+// per-hit gain.
 //
 // The sample data lives in a DrumKit. The voice holds a DrumKit::Ptr so a note
 // in flight keeps its kit alive even if the user swaps kits mid-sound. Copying
@@ -76,7 +77,8 @@ public:
         if (! active || sample == nullptr)
             return;
 
-        const int    srcEnd = juce::jmin (trimEnd, sample->getNumSamples());
+        const int    len    = sample->getNumSamples();
+        const int    srcEnd = juce::jmin (trimEnd, len);
         const float* src    = sample->getReadPointer (0);
 
         // Equal-power pan: pan in [-1, 1]. On a mono bus pan is meaningless, so write
@@ -90,6 +92,11 @@ public:
         float* outL = out.getWritePointer (0, startSample);
         float* outR = out.getNumChannels() > 1 ? out.getWritePointer (1, startSample) : outL;
 
+        // 4-point Catmull-Rom (cubic Hermite). Taps are clamped to the buffer so a
+        // sample's edges never read out of bounds; cleaner than linear when a voice is
+        // tuned/resampled (less high-frequency aliasing and zipper on the transient).
+        auto tap = [src, len] (int k) noexcept { return src[juce::jlimit (0, len - 1, k)]; };
+
         for (int i = 0; i < numSamples; ++i)
         {
             const int idx = (int) position;
@@ -100,7 +107,11 @@ public:
             }
 
             const float frac = (float) (position - idx);
-            const float s    = src[idx] + frac * (src[idx + 1] - src[idx]);
+            const float x0 = tap (idx - 1), x1 = tap (idx), x2 = tap (idx + 1), x3 = tap (idx + 2);
+            const float c1 = 0.5f * (x2 - x0);
+            const float c2 = x0 - 2.5f * x1 + 2.0f * x2 - 0.5f * x3;
+            const float c3 = 0.5f * (x3 - x0) + 1.5f * (x1 - x2);
+            const float s  = ((c3 * frac + c2) * frac + c1) * frac + x1;
 
             outL[i] += s * leftGain;
             outR[i] += s * rightGain;

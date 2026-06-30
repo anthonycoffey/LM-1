@@ -9,28 +9,67 @@ permissions:
   contents: write
 
 jobs:
-  build-macos:
-    name: Build & publish macOS plugins
-    runs-on: macos-14
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-2022]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure (CMake + JUCE)
-        run: cmake -B build -G Xcode
+      - name: Configure (macOS · Xcode)
+        if: runner.os == 'macOS'
+        run: cmake -B build -G Xcode -DNIXIE_COPY_PLUGIN=OFF
 
-      - name: Build (Release, universal binary)
+      - name: Configure (Windows · Visual Studio)
+        if: runner.os == 'Windows'
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DNIXIE_COPY_PLUGIN=OFF
+
+      - name: Build (Release)
         run: cmake --build build --config Release --parallel
 
-      - name: Package AU / VST3 / Standalone
+      - name: Package (macOS — AU + VST3 + Standalone)
+        if: runner.os == 'macOS'
+        shell: bash
         run: |
           set -euo pipefail
           art="build/Nixie_artefacts/Release"
           mkdir -p dist
-          ditto -c -k --keepParent "$art/AU/Nixie.component"   "dist/Nixie-${GITHUB_REF_NAME}-AU.zip"
-          ditto -c -k --keepParent "$art/VST3/Nixie.vst3"      "dist/Nixie-${GITHUB_REF_NAME}-VST3.zip"
-          ditto -c -k --keepParent "$art/Standalone/Nixie.app" "dist/Nixie-${GITHUB_REF_NAME}-Standalone.zip"
+          ditto -c -k --keepParent "$art/AU/Nixie.component"   "dist/Nixie-${GITHUB_REF_NAME}-macOS-AU.zip"
+          ditto -c -k --keepParent "$art/VST3/Nixie.vst3"      "dist/Nixie-${GITHUB_REF_NAME}-macOS-VST3.zip"
+          ditto -c -k --keepParent "$art/Standalone/Nixie.app" "dist/Nixie-${GITHUB_REF_NAME}-macOS-Standalone.zip"
           ls -lh dist
+
+      - name: Package (Windows — VST3 + Standalone)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $art = "build/Nixie_artefacts/Release"
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path "$art/VST3/Nixie.vst3"      -DestinationPath "dist/Nixie-$env:GITHUB_REF_NAME-Windows-VST3.zip" -Force
+          Compress-Archive -Path "$art/Standalone/Nixie.exe" -DestinationPath "dist/Nixie-$env:GITHUB_REF_NAME-Windows-Standalone.zip" -Force
+          Get-ChildItem dist
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nixie-${{ runner.os }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -41,9 +80,15 @@ jobs:
           body: |
             **Nixie ${{ github.ref_name }}** — a software drum machine inspired by the classic Linn LM-1.
 
-            ### Install (macOS · universal — Apple Silicon + Intel)
-            - **AU** → unzip `Nixie-*-AU.zip` into `~/Library/Audio/Plug-Ins/Components/`
-            - **VST3** → unzip `Nixie-*-VST3.zip` into `~/Library/Audio/Plug-Ins/VST3/`
-            - **Standalone** → unzip `Nixie-*-Standalone.zip` and run the app
+            ## Downloads
 
-            > ⚠️ These builds are **not notarized**. On first launch macOS may say "Apple cannot verify…". Right-click the file → **Open**, or run `xattr -dr com.apple.quarantine <file>` to clear the quarantine flag.
+            **macOS** (universal — Apple Silicon + Intel)
+            - **AU** → unzip into `~/Library/Audio/Plug-Ins/Components/`
+            - **VST3** → unzip into `~/Library/Audio/Plug-Ins/VST3/`
+            - **Standalone** — `Nixie.app`
+
+            **Windows** (x64)
+            - **VST3** → unzip into `C:\Program Files\Common Files\VST3\`
+            - **Standalone** — `Nixie.exe`
+
+            > ⚠️ Builds are **not code-signed**. macOS: right-click → **Open** (or `xattr -dr com.apple.quarantine <file>`). Windows: if SmartScreen warns, choose **More info → Run anyway**.

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Nixie VERSION 0.5.0 LANGUAGES C CXX)
+project(Nixie VERSION 0.5.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,8 +27,11 @@ FetchContent_MakeAvailable(JUCE)
 # ---------------------------------------------------------------------------
 # The plugin target. IS_SYNTH + NEEDS_MIDI_INPUT make this an instrument (AUi).
 # COPY_PLUGIN_AFTER_BUILD installs it into your user plugin folders so LUNA
-# (and other hosts) can find it immediately after a build.
+# (and other hosts) can find it immediately after a build. CI turns this off
+# (-DNIXIE_COPY_PLUGIN=OFF) since it only packages the artefacts to ship.
 # ---------------------------------------------------------------------------
+option(NIXIE_COPY_PLUGIN "Copy the built plug-in into user plug-in folders" ON)
+
 juce_add_plugin(Nixie
     COMPANY_NAME                "Anthony Coffey"
     BUNDLE_ID                   "com.anthonycoffey.nixie"
@@ -37,7 +40,7 @@ juce_add_plugin(Nixie
     NEEDS_MIDI_OUTPUT           FALSE
     IS_MIDI_EFFECT              FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD     TRUE
+    COPY_PLUGIN_AFTER_BUILD     ${NIXIE_COPY_PLUGIN}
     PLUGIN_MANUFACTURER_CODE    Coff               # 4 chars, must contain 1 uppercase
     PLUGIN_CODE                 Nix1               # 4 chars, must contain 1 uppercase
     FORMATS                     AU VST3 Standalone
@@ -62,6 +65,7 @@ target_link_libraries(Nixie
     PRIVATE
         juce::juce_audio_utils
         juce::juce_audio_formats
+        juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

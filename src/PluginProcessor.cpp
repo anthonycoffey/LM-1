@@ -48,6 +48,14 @@ NixieAudioProcessor::NixieAudioProcessor()
     lofiAmount   = apvts.getRawParameterValue ("lofi");
     globalTune   = apvts.getRawParameterValue ("tune");
 
+    driveAmt = apvts.getRawParameterValue ("drive");
+    filtFreq = apvts.getRawParameterValue ("filtFreq");
+    filtReso = apvts.getRawParameterValue ("filtReso");
+    filtMode = apvts.getRawParameterValue ("filtMode");
+    punchAtt = apvts.getRawParameterValue ("punchAtt");
+    punchSus = apvts.getRawParameterValue ("punchSus");
+    glueAmt  = apvts.getRawParameterValue ("glue");
+
     for (int i = 0; i < DrumKit::kNumChannels; ++i)
     {
         const auto id = "v" + juce::String (i);
@@ -94,6 +102,30 @@ NixieAudioProcessor::createParameterLayout()
     layout.add (std::make_unique<AudioParameterFloat> (
         ParameterID { "tune", 1 }, "Tune",
         NormalisableRange<float> (-12.0f, 12.0f, 0.01f), 0.0f));
+
+    // Character strip (global): Drive / Filter (cutoff, reso, LP|HP) / Punch
+    // (attack, sustain) / Glue. Defaults are all neutral (no colour, no CPU).
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { "drive", 1 }, "Drive",
+        NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.0f));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { "filtFreq", 1 }, "Filter",
+        NormalisableRange<float> (20.0f, 20000.0f, 1.0f, 0.3f), 20000.0f));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { "filtReso", 1 }, "Reso",
+        NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.0f));
+    layout.add (std::make_unique<AudioParameterChoice> (
+        ParameterID { "filtMode", 1 }, "Filter Mode",
+        juce::StringArray { "LP", "HP" }, 0));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { "punchAtt", 1 }, "Attack",
+        NormalisableRange<float> (-1.0f, 1.0f, 0.001f), 0.0f));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { "punchSus", 1 }, "Sustain",
+        NormalisableRange<float> (-1.0f, 1.0f, 0.001f), 0.0f));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { "glue", 1 }, "Glue",
+        NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.0f));
 
     // Sequencer.
     layout.add (std::make_unique<AudioParameterFloat> (
@@ -220,7 +252,7 @@ juce::String NixieAudioProcessor::getVoiceSourceLabel (int voiceIndex) const
 }
 
 //==============================================================================
-void NixieAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
+void NixieAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
 
@@ -233,6 +265,21 @@ void NixieAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBloc
 
     srrHoldL = srrHoldR = 0.0f;
     srrPhase = 0.0;
+
+    // Character strip DSP (zero added latency).
+    const juce::dsp::ProcessSpec spec { sampleRate,
+                                        (juce::uint32) juce::jmax (1, samplesPerBlock),
+                                        2 };
+    charFilter.prepare (spec);
+    charFilter.reset();
+    charFilter.setEnabled (true);
+
+    charGlue.prepare (spec);
+    charGlue.reset();
+    charGlue.setAttack (12.0f);
+    charGlue.setRelease (140.0f);
+
+    punchFast[0] = punchFast[1] = punchSlow[0] = punchSlow[1] = 0.0f;
 }
 
 //==============================================================================
@@ -658,6 +705,84 @@ void NixieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             voices[(size_t) v].render (dest, cursor, next - cursor, lvl[(size_t) c], pn[(size_t) c]);
         }
         cursor = next;
+    }
+
+    // --- Character strip (global, Main bus): Punch -> Filter -> Drive -> Glue ---
+    // Each stage is gated, so at neutral defaults the whole strip is skipped.
+    {
+        const int numCh = juce::jmin (2, buffer.getNumChannels());
+        float* chans[2] = { numCh > 0 ? buffer.getWritePointer (0) : nullptr,
+                            numCh > 1 ? buffer.getWritePointer (1) : nullptr };
+
+        // 1) Punch — transient shaper. Two |x| envelope followers (fast vs slow); their
+        //    normalised difference marks the attack (>0) vs the body/tail (<0).
+        const float att = punchAtt->load();
+        const float sus = punchSus->load();
+        if (std::abs (att) > 0.001f || std::abs (sus) > 0.001f)
+        {
+            const float aFast = std::exp (-1.0f / (0.0008f * (float) currentSampleRate)); // ~0.8 ms
+            const float aSlow = std::exp (-1.0f / (0.0300f * (float) currentSampleRate)); // ~30 ms
+            for (int c = 0; c < numCh; ++c)
+            {
+                float* d = chans[(size_t) c];
+                if (d == nullptr) continue;
+                float ef = punchFast[(size_t) c], es = punchSlow[(size_t) c];
+                for (int i = 0; i < n; ++i)
+                {
+                    const float a = std::abs (d[i]);
+                    ef = a + aFast * (ef - a);
+                    es = a + aSlow * (es - a);
+                    const float t   = (ef - es) / (ef + es + 1.0e-4f);   // ~[-1, 1]
+                    const float gdb = (t >= 0.0f ? att * t : sus * (-t)) * 15.0f;
+                    d[i] *= juce::Decibels::decibelsToGain (juce::jlimit (-24.0f, 24.0f, gdb));
+                }
+                punchFast[(size_t) c] = ef;
+                punchSlow[(size_t) c] = es;
+            }
+        }
+
+        // 2) Filter — resonant ladder LP/HP. Skipped when wide open (transparent).
+        const bool  filtHP = filtMode->load() > 0.5f;
+        const float fHz    = juce::jlimit (20.0f, 20000.0f, filtFreq->load());
+        const float fRes   = juce::jlimit (0.0f, 1.0f, filtReso->load());
+        const bool  filtOn = filtHP ? (fHz > 30.0f) : (fHz < 18000.0f || fRes > 0.02f);
+        if (filtOn && numCh > 0)
+        {
+            charFilter.setMode (filtHP ? juce::dsp::LadderFilterMode::HPF24
+                                       : juce::dsp::LadderFilterMode::LPF24);
+            charFilter.setCutoffFrequencyHz (fHz);
+            charFilter.setResonance (fRes * 0.9f);   // < 1 keeps it from self-oscillating
+            auto block = juce::dsp::AudioBlock<float> (buffer).getSubsetChannelBlock (0, (size_t) numCh);
+            juce::dsp::ProcessContextReplacing<float> ctx (block);
+            charFilter.process (ctx);
+        }
+
+        // 3) Drive — soft tanh saturation (zero added latency).
+        const float dr = driveAmt->load();
+        if (dr > 0.0001f)
+        {
+            const float pre  = juce::jmap (dr, 0.0f, 1.0f, 1.0f, 9.0f);
+            const float comp = juce::jmap (dr, 0.0f, 1.0f, 1.0f, 0.55f);
+            for (int c = 0; c < numCh; ++c)
+            {
+                float* d = chans[(size_t) c];
+                if (d == nullptr) continue;
+                for (int i = 0; i < n; ++i)
+                    d[i] = std::tanh (pre * d[i]) * comp;
+            }
+        }
+
+        // 4) Glue — bus compressor with auto makeup.
+        const float gl = glueAmt->load();
+        if (gl > 0.0001f && numCh > 0)
+        {
+            charGlue.setThreshold (juce::jmap (gl, 0.0f, 1.0f,  0.0f, -28.0f));
+            charGlue.setRatio     (juce::jmap (gl, 0.0f, 1.0f,  2.0f,   6.0f));
+            auto block = juce::dsp::AudioBlock<float> (buffer).getSubsetChannelBlock (0, (size_t) numCh);
+            juce::dsp::ProcessContextReplacing<float> ctx (block);
+            charGlue.process (ctx);
+            block.multiplyBy (juce::Decibels::decibelsToGain (juce::jmap (gl, 0.0f, 1.0f, 0.0f, 10.0f)));
+        }
     }
 
     // --- Lo-fi stage: bit crush + sample-rate reduction, blended by 'lofi' -----
