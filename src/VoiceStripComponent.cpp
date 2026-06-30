@@ -54,7 +54,7 @@ VoiceStripComponent::VoiceStripComponent (NixieAudioProcessor& proc, int voiceIn
     shufLed.onDoubleClick = [this]
     {
         if (auto* p = processor.apvts.getParameter ("v" + juce::String (index) + "_swing"))
-            p->setValueNotifyingHost (0.0f);   // index 0 = "Follow"
+            p->setValueNotifyingHost (0.0f);   // index 0 = "Straight"
         refreshShuffle();
     };
     addAndMakeVisible (shufLed);

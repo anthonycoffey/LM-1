@@ -196,7 +196,7 @@ private:
         std::atomic<float>* tune  = nullptr;  // -12 .. 12 semitones
         std::atomic<float>* mute  = nullptr;  // 0/1
         std::atomic<float>* solo  = nullptr;  // 0/1
-        std::atomic<float>* swing = nullptr;  // 0/1 — follow the global Shuffle amount
+        std::atomic<float>* swing = nullptr;  // per-track swing choice (Straight..Hard)
         std::atomic<float>* out   = nullptr;  // 0 = Main mix, 1..N = direct out N (Out 1..12)
     };
     std::array<VoiceParams, (size_t) DrumKit::kNumChannels> voiceParams;
@@ -237,7 +237,6 @@ private:
 
     std::atomic<bool>   internalPlaying { false };
     std::atomic<float>* seqTempoParam = nullptr;
-    std::atomic<float>* shuffleParam  = nullptr;
 
     // Real-time record: audio thread queues hits, message thread applies them.
     std::atomic<bool> recordArmed { false };
