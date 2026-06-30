@@ -3,7 +3,7 @@
 #include "FactoryGrooves.h"
 
 //==============================================================================
-// Shuffle: map the discrete "shuffle" choice index to a swing amount (0..1),
+// Map a per-track swing choice index (Straight..Hard) to a swing amount (0..1),
 // where 0 = straight (50%) and 1 = hard (75%). Values chosen so the named
 // settings land on musical subdivisions (triplet = ~66.7%).
 static float shuffleAmountForIndex (int idx) noexcept
@@ -69,7 +69,6 @@ NixieAudioProcessor::NixieAudioProcessor()
     }
 
     seqTempoParam = apvts.getRawParameterValue ("seqTempo");
-    shuffleParam  = apvts.getRawParameterValue ("shuffle");
 
     // Preset library: factory banks 1-10 (genre) + any user-saved banks. Start on
     // the first factory groove so the sequencer plays something out of the box.
@@ -132,12 +131,7 @@ NixieAudioProcessor::createParameterLayout()
         ParameterID { "seqTempo", 1 }, "Seq Tempo",
         NormalisableRange<float> (40.0f, 240.0f, 0.1f), 120.0f));
 
-    // Shuffle as discrete, musical settings so the knob lands on good grooves.
-    // Index -> swing amount handled in shuffleAmountForIndex(); 50/56/62/67/75%.
-    // Only Triplet equals a clean note fraction (1/8T), so the rest are named words.
-    layout.add (std::make_unique<AudioParameterChoice> (
-        ParameterID { "shuffle", 1 }, "Shuffle",
-        juce::StringArray { "Straight", "Light", "Medium", "Triplet", "Hard" }, 0));
+    // (Global Shuffle removed — swing is per-track only; see each voice's "_swing".)
 
     // Per-channel mixer: level / pan / tune / mute / solo, generated in a loop.
     // (12 channels; the open-hat voice shares the Hi-Hat channel.)
@@ -164,11 +158,10 @@ NixieAudioProcessor::createParameterLayout()
         layout.add (std::make_unique<AudioParameterBool> (
             ParameterID { id + "_solo", 1 }, n + " Solo", false));
 
-        // Per-track shuffle: same notched settings as the global knob, plus
-        // "Follow" (default) which uses the global Shuffle for this track.
+        // Per-track swing: a notched setting per channel (default Straight).
         layout.add (std::make_unique<AudioParameterChoice> (
             ParameterID { id + "_swing", 1 }, n + " Swing",
-            juce::StringArray { "Follow", "Straight", "Light", "Medium", "Triplet", "Hard" }, 0));
+            juce::StringArray { "Straight", "Light", "Medium", "Triplet", "Hard" }, 0));
 
         // Output routing: Main (default) or one of the numbered direct outs. Several
         // channels can share an "Out N" to group them; in LUNA, add that out in the
@@ -588,7 +581,7 @@ void NixieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         tr.seqEnabled      = true;   // runs whenever the transport (host or Play) is rolling
         tr.internalPlaying = internalPlaying.load();
         tr.internalBpm     = seqTempoParam->load();
-        tr.swing           = shuffleAmountForIndex ((int) shuffleParam->load());   // choice index -> amount
+        tr.swing           = 0.0f;   // no global swing; each lane carries its own (below)
         if (auto* ph = getPlayHead())
             if (auto pos = ph->getPosition())
             {
@@ -597,20 +590,16 @@ void NixieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 tr.hostPpq     = pos->getPpqPosition().orFallback (0.0);
             }
 
-        // Per-lane swing amount. Each track is either "Follow" (index 0 -> use the
-        // global Shuffle) or its own notched setting. A lane follows the channel it
-        // renders through, so the open hat (voice 12) tracks the Hi-hats channel.
-        const float globalSwing = tr.swing;   // already mapped from the global choice
+        // Per-lane swing: each track carries its own notched setting (0 = Straight).
+        // A lane follows the channel it renders through, so the open hat (voice 12)
+        // tracks the Hi-hats channel.
         float laneSwing[Pattern::kMaxLanes];
         for (int lane = 0; lane < Pattern::kMaxLanes; ++lane)
         {
-            float amt = globalSwing;
+            float amt = 0.0f;
             if (lane < DrumKit::kNumVoices)
                 if (auto* sp = voiceParams[(size_t) channelForVoice (lane)].swing)
-                {
-                    const int t = (int) sp->load();   // 0 = Follow, else setting (1..5)
-                    amt = (t <= 0) ? globalSwing : shuffleAmountForIndex (t - 1);
-                }
+                    amt = shuffleAmountForIndex ((int) sp->load());
             laneSwing[(size_t) lane] = amt;
         }
         tr.laneSwing = laneSwing;

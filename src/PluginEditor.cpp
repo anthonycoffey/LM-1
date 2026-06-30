@@ -51,36 +51,17 @@ NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     setupSlider (tuneSlider,    tuneLabel,    "Tune");
 
     setupSlider (driveSlider,   driveLabel,   "Drive");
-    setupSlider (filterSlider,  filterLabel,  "Filter");
-    setupSlider (resoSlider,    resoLabel,    "Reso");
     setupSlider (attackSlider,  attackLabel,  "Attack");
     setupSlider (sustainSlider, sustainLabel, "Sustain");
     setupSlider (glueSlider,    glueLabel,    "Glue");
 
-    // Global shuffle: label + < > steppers + LED readout (no knob).
-    shuffleLabel.setText ("Shuffle", juce::dontSendNotification);
-    shuffleLabel.setJustificationType (juce::Justification::centred);
-    addAndMakeVisible (shuffleLabel);
-    shufPrev.onClick = [this] { ChoiceParam::step (processor.apvts.getParameter ("shuffle"), -1); refreshShuffleLeds(); };
-    shufNext.onClick = [this] { ChoiceParam::step (processor.apvts.getParameter ("shuffle"), +1); refreshShuffleLeds(); };
-    addAndMakeVisible (shufPrev);
-    addAndMakeVisible (shufNext);
-    shuffleLed.setFontHeight (11.0f);
-    shuffleLed.onDoubleClick = [this]
-    {
-        if (auto* p = processor.apvts.getParameter ("shuffle"))
-            p->setValueNotifyingHost (0.0f);   // index 0 = "Straight"
-        refreshShuffleLeds();
-    };
-    addAndMakeVisible (shuffleLed);
+    // (Global shuffle removed — swing now lives on each mixer strip.)
 
     masterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "masterGain", masterSlider);
     lofiAttach    = std::make_unique<SliderAttachment> (processor.apvts, "lofi",       lofiSlider);
     tuneAttach    = std::make_unique<SliderAttachment> (processor.apvts, "tune",       tuneSlider);
 
     driveAttach   = std::make_unique<SliderAttachment> (processor.apvts, "drive",    driveSlider);
-    filterAttach  = std::make_unique<SliderAttachment> (processor.apvts, "filtFreq", filterSlider);
-    resoAttach    = std::make_unique<SliderAttachment> (processor.apvts, "filtReso", resoSlider);
     attackAttach  = std::make_unique<SliderAttachment> (processor.apvts, "punchAtt", attackSlider);
     sustainAttach = std::make_unique<SliderAttachment> (processor.apvts, "punchSus", sustainSlider);
     glueAttach    = std::make_unique<SliderAttachment> (processor.apvts, "glue",     glueSlider);
@@ -96,8 +77,6 @@ NixieAudioProcessorEditor::NixieAudioProcessorEditor (NixieAudioProcessor& p)
     setReset (tuneSlider,   "tune");
 
     setReset (driveSlider,   "drive");
-    setReset (filterSlider,  "filtFreq");
-    setReset (resoSlider,    "filtReso");
     setReset (attackSlider,  "punchAtt");
     setReset (sustainSlider, "punchSus");
     setReset (glueSlider,    "glue");
@@ -387,7 +366,6 @@ void NixieAudioProcessorEditor::refreshMeterRate()
 
 void NixieAudioProcessorEditor::refreshShuffleLeds()
 {
-    shuffleLed.setText (ChoiceParam::name (processor.apvts.getParameter ("shuffle")));
     for (auto* s : strips)
         s->refreshShuffle();
 }
@@ -510,7 +488,7 @@ void NixieAudioProcessorEditor::resized()
         auto g = rGlobals;
         g.removeFromTop (kLabelStrip);              // room for the section label
         g = g.reduced (12, 6);
-        const int kW = g.getWidth() / 10;          // 9 knobs + the shuffle stepper
+        const int kW = g.getWidth() / 7;           // 7 knobs across the row
         auto place = [&] (juce::Slider& s, juce::Label& lab)
         {
             auto cell = g.removeFromLeft (kW);
@@ -521,24 +499,10 @@ void NixieAudioProcessorEditor::resized()
         place (lofiSlider,    lofiLabel);
         place (tuneSlider,    tuneLabel);
         place (driveSlider,   driveLabel);
-        place (filterSlider,  filterLabel);
-        place (resoSlider,    resoLabel);
         place (attackSlider,  attackLabel);
         place (sustainSlider, sustainLabel);
         place (glueSlider,    glueLabel);
-        {
-            // Shuffle cell: label, < > steppers, then the LED value below them —
-            // matching the value-below-control layout of the other global fields.
-            auto cell = g.removeFromLeft (kW);
-            shuffleLabel.setBounds (cell.removeFromTop (16));
-            shuffleLed.setBounds (cell.removeFromBottom (18).reduced (8, 1));
-            auto arrows = cell.withSizeKeepingCentre (54, juce::jmin (cell.getHeight(), 22));
-            shufPrev.setBounds (arrows.removeFromLeft (27));
-            shufNext.setBounds (arrows);
-        }
     }
-
-    // (Character knobs — Drive/Filter/Reso/Attack/Sustain/Glue — share the GLOBAL row.)
 
     // SEQUENCER — transport controls + pattern slots + step grid, all together.
     rSeq = area.removeFromBottom (kLabelStrip + 44 + 28 + 256);   // grid +30 for the LED/number header

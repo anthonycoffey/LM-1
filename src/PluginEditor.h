@@ -14,7 +14,7 @@
 //==============================================================================
 // Editor: the full Nixie panel — a 12-channel voice mixer (one strip per
 // instrument), the step-grid sequencer with transport + meter/rate selectors,
-// the bank / groove library, and the global Master / Lo-Fi / Tune / Shuffle.
+// the bank / groove library, and the global Master / Lo-Fi / Tune + character knobs.
 //==============================================================================
 class NixieAudioProcessorEditor : public juce::AudioProcessorEditor,
                                   public juce::ChangeListener,
@@ -39,7 +39,7 @@ private:
     void loadPresetDialog();
     void refreshBankUI();         // reflect the current bank + slot states
     void gotoBank (int newBank);  // change bank + auto-load the selected slot's groove
-    void refreshShuffleLeds();    // push shuffle settings into the global + per-track LEDs
+    void refreshShuffleLeds();    // push each track's swing setting into its strip LED
     void refreshMeterRate();      // sync the Meter / Rate selectors to the working pattern
 
     NixieAudioProcessor& processor;
@@ -73,20 +73,14 @@ private:
     std::unique_ptr<SliderAttachment> tempoAttach;
 
     juce::Slider masterSlider, lofiSlider, tuneSlider;
-    juce::Label  masterLabel,  lofiLabel,  tuneLabel,  shuffleLabel;
+    juce::Label  masterLabel,  lofiLabel,  tuneLabel;
 
-    // Character strip: Drive / Filter (cutoff) / Reso / Attack / Sustain / Glue.
-    juce::Slider driveSlider, filterSlider, resoSlider, attackSlider, sustainSlider, glueSlider;
-    juce::Label  driveLabel,  filterLabel,  resoLabel,  attackLabel,  sustainLabel,  glueLabel;
-
-    // Global shuffle: < > steppers + LED readout (no knob), matching the strips.
-    StepArrow shufPrev { true,  LMColours::orange };
-    StepArrow shufNext { false, LMColours::orange };
-    LedText   shuffleLed;
+    // Character strip (kept): Drive / Attack / Sustain / Glue.
+    juce::Slider driveSlider, attackSlider, sustainSlider, glueSlider;
+    juce::Label  driveLabel,  attackLabel,  sustainLabel,  glueLabel;
 
     std::unique_ptr<SliderAttachment> masterAttach, lofiAttach, tuneAttach;
-    std::unique_ptr<SliderAttachment> driveAttach, filterAttach, resoAttach,
-                                      attackAttach, sustainAttach, glueAttach;
+    std::unique_ptr<SliderAttachment> driveAttach, attackAttach, sustainAttach, glueAttach;
 
     // Styling: wood side cheeks + orange section frames.
     static constexpr int kCheek = 52;       // thicker wood cheeks
